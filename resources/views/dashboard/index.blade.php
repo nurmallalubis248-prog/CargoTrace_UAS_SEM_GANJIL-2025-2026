@@ -2,9 +2,17 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="mb-4 flex items-center justify-between">
-    <h1 class="text-2xl font-extrabold tracking-tight text-matcha-900">Dashboard</h1>
-    <p class="text-sm text-ink-500">{{ auth()->user()->isCustomer() ? 'Your shipments' : 'All shipments' }} &middot; live data from the database</p>
+<div class="grad-brand mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-6 text-white shadow-lg">
+    <div>
+        <p class="text-sm text-white/80"><span data-i18n="welcome">Welcome back</span>, {{ auth()->user()->name }}</p>
+        <h1 class="text-3xl font-extrabold tracking-tight" data-i18n="dashboard">Dashboard</h1>
+        <p class="text-sm text-white/80" data-i18n="{{ auth()->user()->isCustomer() ? 'yourShip' : 'allShip' }}"></p>
+    </div>
+    <div class="text-right">
+        <p class="text-xs font-semibold uppercase tracking-widest text-white/80" data-i18n="clock">Local time</p>
+        <p id="big-clock" class="text-4xl font-extrabold tabular-nums">--:--:--</p>
+        <p id="big-date" class="text-sm text-white/90"></p>
+    </div>
 </div>
 
 <div id="dash-error" class="mb-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -13,46 +21,65 @@
 
 <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
     @foreach([
-        ['k-shipments', 'Total shipments'], ['k-transit', 'In transit'], ['k-delivered', 'Delivered'],
-        ['k-delayed', 'Delayed'], ['k-exceptions', 'Open exceptions'], ['k-delay-rate', 'Delay rate'],
+        ['k-shipments', 'total'], ['k-transit', 'transit'], ['k-delivered', 'delivered'],
+        ['k-delayed', 'delayed'], ['k-exceptions', 'exceptions'], ['k-delay-rate', 'delayRate'],
     ] as [$id, $label])
         <div class="card">
-            <p class="text-xs font-semibold text-ink-500">{{ $label }}</p>
+            <p class="text-xs font-semibold text-ink-500" data-i18n="{{ $label }}"></p>
             <p id="{{ $id }}" class="mt-1 text-3xl font-bold">&ndash;</p>
         </div>
     @endforeach
 </div>
 
-<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-    <div class="card"><p class="text-xs font-semibold text-ink-500">Exception rate</p><p id="k-exc-rate" class="mt-1 text-2xl font-bold">&ndash;</p></div>
-    <div class="card"><p class="text-xs font-semibold text-ink-500">On-time delivery rate</p><p id="k-ontime" class="mt-1 text-2xl font-bold">&ndash;</p></div>
-    <div class="card"><p class="text-xs font-semibold text-ink-500">Avg delay (delayed shipments) &middot; Avg exception resolution</p><p id="k-avg" class="mt-1 text-2xl font-bold">&ndash;</p></div>
+<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-4">
+    <div class="card"><p class="text-xs font-semibold text-ink-500" data-i18n="revenue">Revenue received</p><p id="k-paid" class="mt-1 text-2xl font-bold" data-idr="0">&ndash;</p><p id="k-paid-pending" class="text-xs text-ink-500"></p></div>
+    <div class="card"><p class="text-xs font-semibold text-ink-500" data-i18n="excRate">Exception rate</p><p id="k-exc-rate" class="mt-1 text-2xl font-bold">&ndash;</p></div>
+    <div class="card"><p class="text-xs font-semibold text-ink-500" data-i18n="onTime">On-time delivery rate</p><p id="k-ontime" class="mt-1 text-2xl font-bold">&ndash;</p></div>
+    <div class="card"><p class="text-xs font-semibold text-ink-500" data-i18n="avg">Avg</p><p id="k-avg" class="mt-1 text-2xl font-bold">&ndash;</p></div>
 </div>
 
 <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
     <div class="card">
-        <h2 class="mb-3 font-semibold">Shipments by status</h2>
+        <h2 class="mb-3 font-semibold" data-i18n="byStatus">Shipments by status</h2>
         <div class="relative h-64"><canvas id="chart-status"></canvas></div>
     </div>
     <div class="card">
-        <h2 class="mb-3 font-semibold">Shipments by carrier</h2>
+        <h2 class="mb-3 font-semibold" data-i18n="byCarrier">Shipments by carrier</h2>
         <div class="relative h-64"><canvas id="chart-carrier"></canvas></div>
     </div>
     <div class="card">
-        <h2 class="mb-3 font-semibold">Delays by severity</h2>
+        <h2 class="mb-3 font-semibold" data-i18n="bySeverity">Delays by severity</h2>
         <div class="relative h-64"><canvas id="chart-severity"></canvas></div>
     </div>
 </div>
 
+<div class="mt-4 grid grid-cols-1 gap-4">
+    <div class="card">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div><h2 class="font-semibold" data-i18n="liveMap">Live shipment map</h2><p class="text-xs text-ink-500" data-i18n="liveMapSub"></p></div>
+            <div class="flex gap-3 text-xs font-semibold text-ink-600">
+                <span>✈ <span data-i18n="modeAir">Air</span></span><span>🚚 <span data-i18n="modeRoad">Road</span></span><span>🚢 <span data-i18n="modeSea">Sea</span></span>
+            </div>
+        </div>
+        <p id="map-empty" class="mb-2 hidden text-sm text-ink-500" data-i18n="noPos"></p>
+        <div id="map" class="h-[32rem] w-full rounded-xl" data-no-i18n></div>
+    </div>
+</div>
 <div class="card mt-4">
-    <h2 class="mb-1 font-semibold">Active shipments &mdash; latest known position</h2>
-    <p id="map-empty" class="mb-2 hidden text-sm text-ink-500">No active shipments with a known position.</p>
-    <div id="map" class="h-96 w-full rounded-lg"></div>
+    <h2 class="font-semibold">Delay forecast</h2>
+    <p class="mb-3 text-xs text-ink-500">Statistical model based on lane history and open exceptions (not a guarantee).</p>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-ink-200 text-sm">
+            <thead class="bg-ink-50"><tr><th class="th">Shipment</th><th class="th">Route</th><th class="th">Predicted delay</th><th class="th">Predicted ETA</th><th class="th">Risk</th><th class="th">Confidence</th></tr></thead>
+            <tbody id="forecast-body" class="divide-y divide-ink-100"></tbody>
+        </table>
+    </div>
 </div>
 @endsection
 
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ asset('js/ct-map.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 (function () {
@@ -61,19 +88,17 @@
     const pct = (v) => (v === null || v === undefined) ? 'n/a' : v + '%';
     const hrs = (v) => (v === null || v === undefined) ? 'n/a' : v + ' h';
 
-    const map = L.map('map').setView([15, 80], 2);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    const map = CT.baseMap('map', [15, 80], 3);
     const markers = L.layerGroup().addTo(map);
+    const overviewLayer = L.layerGroup().addTo(map);   // pin tujuan + garis tipis semua pengiriman
+    const routeLayer = L.layerGroup().addTo(map);      // sorotan merah untuk pengiriman yang diklik
 
     const charts = {};
     function draw(id, type, labels, values, colors) {
         if (charts[id]) { charts[id].destroy(); }
         charts[id] = new Chart($(id), {
             type: type,
-            data: { labels: labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, borderRadius: type === 'bar' ? 6 : 0 }] },
+            data: { labels: labels.map(CT.tx), datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, borderRadius: type === 'bar' ? 6 : 0 }] },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: type === 'doughnut', position: 'bottom', labels: { usePointStyle: true, font: { family: 'Manrope' } } } },
@@ -87,13 +112,25 @@
         const a = document.createElement('a');
         a.href = pos.url; a.textContent = pos.shipment_number; a.style.fontWeight = '600';
         box.appendChild(a);
-        [pos.status + (pos.delayed ? ' (delayed)' : ''), pos.label || 'Unknown location', 'Updated ' + pos.updated_at].forEach((t) => {
+        [CT.modeLabel(pos.mode) + ' · ' + CT.tx(pos.status) + (pos.delayed ? ' (' + CT.tx('Delayed').toLowerCase() + ')' : ''), pos.label || CT.tx('Unknown location'), CT.tx('Updated') + ' ' + pos.updated_at].forEach((t) => {
             const d = document.createElement('div'); d.textContent = t; box.appendChild(d);
         });
         return box;
     }
 
+    let lastData = null;
+    const RISK = { ON_TIME: 'bg-matcha-100 text-matcha-800', LOW: 'bg-yellow-100 text-yellow-800', MEDIUM: 'bg-sakura-100 text-sakura-700', HIGH: 'bg-red-100 text-red-800' };
+    function renderForecast(rows) {
+        const tb = $('forecast-body');
+        tb.innerHTML = rows.length ? rows.map((r) => '<tr><td class="td"><a class="font-semibold text-matcha-700 hover:underline" href="' + r.url + '">' + r.number + '</a></td><td class="td">' + r.route + '</td><td class="td">+' + r.predicted_delay_hours + ' h</td><td class="td">' + r.predicted_eta + ' UTC</td><td class="td"><span class="rounded-full px-2 py-0.5 text-xs font-semibold ' + RISK[r.risk] + '">' + CT.tx(r.risk) + '</span></td><td class="td">' + r.confidence + '%</td></tr>').join('')
+            : '<tr><td class="td" colspan="6">' + CT.tx('No active shipments to forecast.') + '</td></tr>';
+    }
+    document.addEventListener('ct:country', () => { if (lastData) { render(lastData); } });
     function render(d) {
+        lastData = d; routeLayer.clearLayers(); overviewLayer.clearLayers();
+        $('k-paid').dataset.idr = d.payments.paid_amount; CT.refreshMoney();
+        $('k-paid-pending').textContent = d.payments.pending ? d.payments.pending + ' ' + CT.tx('Pending') : '';
+        renderForecast(d.forecast || []);
         set('k-shipments', d.totals.shipments);
         set('k-transit', d.totals.in_transit);
         set('k-delivered', d.totals.delivered);
@@ -114,22 +151,44 @@
         draw('chart-severity', 'bar', sv, sv.map((k) => d.delay_by_severity[k]), sv.map((k) => svColor[k] || '#737B69'));
 
         markers.clearLayers();
-        const bounds = [];
-        d.positions.forEach((p) => {
-            const m = L.circleMarker([p.latitude, p.longitude], {
-                radius: 8, color: p.delayed ? '#9E3256' : '#3F5729', fillColor: p.delayed ? '#E67B9C' : '#86A85D', fillOpacity: 0.85
-            }).bindPopup(popup(p));
+        const bounds = [], seenDest = {};
+        d.positions.filter(CT.inCountry).forEach((p) => {
+            const ll = [Number(p.latitude), Number(p.longitude)];
+            const hasDest = p.dest_lat !== null && p.dest_lat !== undefined && p.dest_lng !== null && p.dest_lng !== undefined
+                && isFinite(Number(p.dest_lat)) && isFinite(Number(p.dest_lng));
+            const dest = hasDest ? [Number(p.dest_lat), Number(p.dest_lng)] : null;
+            const brg = dest ? CT.bearing(ll, dest) : 0;
+            const m = CT.vehicle(p.mode, ll, p.delayed, brg).bindPopup(popup(p));
+            m.on('click', () => {   // show destination pin + remaining route for the clicked shipment
+                routeLayer.clearLayers();
+                if (!dest) { return; }
+                CT.pin(dest).addTo(routeLayer);
+                CT.route(routeLayer, [ll, dest], p.mode, { color: '#E0394F', weight: 4, opacity: 0.9 });
+            });
             markers.addLayer(m);
-            bounds.push([p.latitude, p.longitude]);
+            bounds.push(ll);
+            if (dest) {   // titik tujuan + garis menuju tujuan langsung tampil
+                CT.quickLine(overviewLayer, ll, dest, p.mode, Object.assign({}, CT.routeStyle(p.mode), { opacity: 0.55, weight: 2 }));
+                const key = dest[0].toFixed(3) + ',' + dest[1].toFixed(3);
+                if (!seenDest[key]) { seenDest[key] = true; CT.pin(dest).bindPopup(CT.tx('Destination') + ': ' + (p.dest_country || '')).addTo(overviewLayer); }
+                bounds.push(dest);
+            }
         });
         $('map-empty').classList.toggle('hidden', bounds.length > 0);
         if (bounds.length) { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5 }); }
     }
 
+    // Clock + calendar
+    const tick = () => { const n = new Date(); $('big-clock').textContent = CT.timeStr(n);
+        $('big-date').textContent = CT.dateStr(n, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + CT.tzLabel(); };
+    tick(); setInterval(tick, 1000);
+    document.addEventListener('ct:lang', () => { tick(); if (lastData) { render(lastData); } });
+    document.addEventListener('ct:country', tick);
+
     fetch('{{ route('dashboard.stats') }}', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
         .then((r) => { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
         .then(render)
-        .catch(() => $('dash-error').classList.remove('hidden'));
+        .catch((e) => { console.error('Dashboard error:', e); $('dash-error').classList.remove('hidden'); });
 })();
 </script>
 @endpush

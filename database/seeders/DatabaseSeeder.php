@@ -39,12 +39,24 @@ class DatabaseSeeder extends Seeder
         'LKCMB' => ['Port of Colombo', 'LK', 6.9500, 79.8500],
         'JPYOK' => ['Port of Yokohama', 'JP', 35.4500, 139.6500],
         'USNYC' => ['Port of New York & New Jersey', 'US', 40.6900, -74.1500],
+        'IDCGK' => ['Soekarno-Hatta Airport (Jakarta)', 'ID', -6.1256, 106.6559],
+        'SGSIA' => ['Changi Airport (Singapore)', 'SG', 1.3644, 103.9915],
+        'AEDXB' => ['Dubai International Airport', 'AE', 25.2532, 55.3657],
+        'GBLHR' => ['London Heathrow Airport', 'GB', 51.4700, -0.4543],
+        'IDBDO' => ['Bandung (Warehouse)', 'ID', -6.9175, 107.6191],
+        'IDSUB' => ['Surabaya (Warehouse)', 'ID', -7.2575, 112.7521],
+        'IDMES' => ['Medan (Warehouse)', 'ID', 3.5952, 98.6722],
+        'IDPLM' => ['Palembang (Warehouse)', 'ID', -2.9761, 104.7754],
     ];
 
     private const CARRIERS = [
         'MAEU' => 'Maersk', 'MSCU' => 'MSC', 'CMDU' => 'CMA CGM',
         'EGLV' => 'Evergreen', 'ONEY' => 'Ocean Network Express', 'HLCU' => 'Hapag-Lloyd',
+        'GARC' => 'Garuda Cargo', 'SQCG' => 'Singapore Airlines Cargo', 'EKSC' => 'Emirates SkyCargo',
+        'JNEX' => 'JNE Trucking', 'DHLR' => 'DHL Road Freight',
     ];
+    private const AIR = ['GARC', 'SQCG', 'EKSC'];
+    private const ROAD = ['JNEX', 'DHLR'];
 
     /** route key => [origin, destination, intermediate position reports [label, lat, lng]] */
     private const ROUTES = [
@@ -55,6 +67,10 @@ class DatabaseSeeder extends Seeder
         'SHA-LAX' => ['CNSHA', 'USLAX', [['North Pacific (west)', 38.0, 160.0], ['North Pacific (east)', 36.0, -150.0]]],
         'JKT-SYD' => ['IDJKT', 'AUSYD', [['Lombok Strait', -8.7, 115.7], ['Timor Sea', -11.5, 126.0], ['Coral Sea', -17.0, 152.0]]],
         'BLW-NSA' => ['IDBLW', 'INNSA', [['Andaman Sea', 7.5, 94.0], ['Arabian Sea', 14.0, 75.0]]],
+        'CGK-LHR' => ['IDCGK', 'GBLHR', [['Over Strait of Malacca', 5.5, 99.0], ['Over the Bay of Bengal', 15.0, 85.0], ['Over Arabian Sea', 20.0, 65.0], ['Over Turkey', 39.0, 33.0]]],
+        'SIA-DXB' => ['SGSIA', 'AEDXB', [['Over Andaman Sea', 8.0, 95.0], ['Over Arabian Sea', 17.0, 68.0]]],
+        'JKT-SUB' => ['IDJKT', 'IDSUB', [['Cikampek, West Java', -6.40, 107.45], ['Cirebon, West Java', -6.73, 108.55], ['Semarang, Central Java', -6.97, 110.42]]],
+        'BDO-MES' => ['IDBDO', 'IDMES', [['Merak (Banten)', -5.93, 106.00], ['Bandar Lampung', -5.43, 105.26], ['Palembang, South Sumatra', -2.98, 104.77], ['Jambi', -1.61, 103.61]]],
     ];
 
     /** progress: created | booked | in_transit | delivered. dep_h = departure in hours from now (negative = past). */
@@ -72,7 +88,16 @@ class DatabaseSeeder extends Seeder
             'exception' => ['DOCUMENTATION_ISSUE', 'MEDIUM', 'Missing certificate of origin; corrected copy supplied.', 'RESOLVED']],
         ['route' => 'JKT-SYD', 'carrier' => 'ONEY', 'cust' => 1, 'cargo' => 'CONTAINER_LCL', 'kg' => 3100, 'dep_h' => 96, 'days' => 11, 'progress' => 'booked', 'wp' => 0, 'delay_h' => 0],
         ['route' => 'SHA-LAX', 'carrier' => 'MSCU', 'cust' => 0, 'cargo' => 'LIQUID', 'kg' => 21000, 'dep_h' => 216, 'days' => 16, 'progress' => 'created', 'wp' => 0, 'delay_h' => 0],
+        ['route' => 'CGK-LHR', 'carrier' => 'GARC', 'cust' => 0, 'cargo' => 'GENERAL', 'kg' => 1800, 'dep_h' => -14, 'days' => 1, 'progress' => 'in_transit', 'wp' => 3, 'delay_h' => 0],
+        ['route' => 'SIA-DXB', 'carrier' => 'EKSC', 'cust' => 1, 'cargo' => 'REFRIGERATED', 'kg' => 950, 'dep_h' => -12, 'days' => 1, 'progress' => 'in_transit', 'wp' => 2, 'delay_h' => 8,
+            'exception' => ['WEATHER_DELAY', 'LOW', 'Holding pattern due to thunderstorms near the destination.', 'OPEN']],
+        ['route' => 'JKT-SUB', 'carrier' => 'JNEX', 'cust' => 0, 'cargo' => 'GENERAL', 'kg' => 4200, 'dep_h' => -30, 'days' => 2, 'progress' => 'in_transit', 'wp' => 2, 'delay_h' => 0],
+        ['route' => 'BDO-MES', 'carrier' => 'DHLR', 'cust' => 1, 'cargo' => 'CONTAINER_LCL', 'kg' => 7600, 'dep_h' => -60, 'days' => 4, 'progress' => 'in_transit', 'wp' => 3, 'delay_h' => 30,
+            'exception' => ['MISROUTED', 'HIGH', 'Truck diverted because of a road closure; new ETA issued.', 'INVESTIGATING']],
     ];
+
+    /** @var array<int,int> warehouse ids created in run(), used when seeding shipments */
+    private array $whIds = [];
 
     public function run(): void
     {
@@ -87,13 +112,19 @@ class DatabaseSeeder extends Seeder
         foreach (self::LOCATIONS as $code => [$name, $country, $lat, $lng]) {
             $locations[$code] = Location::updateOrCreate(
                 ['code' => $code],
-                ['name' => $name, 'country' => $country, 'type' => 'PORT', 'latitude' => $lat, 'longitude' => $lng]
+                ['name' => $name, 'country' => $country, 'type' => str_contains($name, 'Airport') ? 'AIRPORT' : (str_contains($name, 'Warehouse') ? 'WAREHOUSE' : 'PORT'), 'latitude' => $lat, 'longitude' => $lng]
             );
         }
 
         $carriers = [];
         foreach (self::CARRIERS as $code => $name) {
-            $carriers[$code] = Carrier::updateOrCreate(['code' => $code], ['name' => $name]);
+            $carriers[$code] = Carrier::updateOrCreate(['code' => $code], ['name' => $name, 'transport_mode' => in_array($code, self::AIR, true) ? 'AIR' : (in_array($code, self::ROAD, true) ? 'ROAD' : 'SEA')]);
+        }
+
+        $this->whIds = [];
+        foreach ([['JKT-WH', 'Jakarta Distribution Hub', 'IDJKT', 60000], ['SUB-WH', 'Surabaya Warehouse', 'IDSUB', 40000],
+                  ['MES-WH', 'Medan Warehouse', 'IDMES', 30000], ['BDO-WH', 'Bandung Warehouse', 'IDBDO', 25000]] as [$code, $name, $loc, $cap]) {
+            $this->whIds[] = \App\Models\Warehouse::updateOrCreate(['code' => $code], ['name' => $name, 'location_id' => ($locations[$loc] ?? null)?->id, 'capacity_kg' => $cap])->id;
         }
 
         if (Shipment::withTrashed()->exists()) {
@@ -146,6 +177,7 @@ class DatabaseSeeder extends Seeder
             'carrier_id' => $carriers[$d['carrier']]->id,
             'origin_id' => $origin->id,
             'destination_id' => $dest->id,
+            'warehouse_id' => $this->whIds[crc32($d['route'].$d['carrier']) % count($this->whIds)],
             'cargo_type' => $d['cargo'],
             'weight_kg' => $d['kg'],
             'expected_departure_at' => $dep->format($fmt),

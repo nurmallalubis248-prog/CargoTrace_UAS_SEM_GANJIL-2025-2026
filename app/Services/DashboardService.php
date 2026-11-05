@@ -63,12 +63,18 @@ class DashboardService
             ])
             ->whereNotNull('current_latitude')
             ->orderByDesc('last_event_at')
+            ->with(['carrier', 'destination', 'origin'])
             ->limit(200)
             ->get()
             ->map(fn (Shipment $s) => [
                 'id' => $s->id,
                 'shipment_number' => $s->shipment_number,
                 'status' => $s->current_status->value,
+                'mode' => $s->carrier->transport_mode ?? 'SEA',
+                'origin_country' => $s->origin?->country,
+                'dest_country' => $s->destination?->country,
+                'dest_lat' => $s->destination?->latitude,
+                'dest_lng' => $s->destination?->longitude,
                 'delayed' => $s->is_delayed,
                 'latitude' => $s->current_latitude,
                 'longitude' => $s->current_longitude,
@@ -78,6 +84,11 @@ class DashboardService
             ])->values()->all();
 
         return [
+            'forecast' => app(ForecastService::class)->forecast($base()),
+            'payments' => [
+                'paid_amount' => (int) \App\Models\Payment::where('status', 'PAID')->whereIn('shipment_id', $base()->select('shipments.id'))->sum('amount'),
+                'pending' => \App\Models\Payment::where('status', 'PENDING')->whereIn('shipment_id', $base()->select('shipments.id'))->count(),
+            ],
             'totals' => [
                 'shipments' => $total,
                 'in_transit' => (int) ($byStatus[ShipmentStatus::IN_TRANSIT->value] ?? 0),

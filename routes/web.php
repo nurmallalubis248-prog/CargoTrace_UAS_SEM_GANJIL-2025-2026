@@ -6,15 +6,21 @@ use App\Http\Controllers\Web\Admin\AuditLogController;
 use App\Http\Controllers\Web\Admin\CarrierController;
 use App\Http\Controllers\Web\Admin\LocationController;
 use App\Http\Controllers\Web\Admin\UserController;
+use App\Http\Controllers\Web\Admin\WarehouseController;
+use App\Http\Controllers\Web\Admin\AccountingController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\ExceptionController;
 use App\Http\Controllers\Web\NotificationController;
+use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\ShipmentController;
 use App\Http\Controllers\Web\TrackingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'login'));
+
+// Midtrans webhook: public (no session), signature-verified, CSRF-exempt (see bootstrap/app.php)
+Route::post('midtrans/notification', [PaymentController::class, 'notification'])->name('midtrans.notification');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
@@ -36,6 +42,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('exceptions/{exception}', [ExceptionController::class, 'update'])->name('exceptions.update');
     Route::get('shipments/{shipment}/weather', [ExternalApiController::class, 'weather'])->name('shipments.weather');
 
+    Route::post('shipments/{shipment}/pay', [PaymentController::class, 'store'])->middleware('throttle:10,1')->name('shipments.pay');
+    Route::get('payments/{payment}/sync', [PaymentController::class, 'sync'])->name('payments.sync');
+
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
@@ -55,6 +64,13 @@ Route::middleware('auth')->group(function () {
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::post('users', [UserController::class, 'store'])->name('users.store');
         Route::patch('users/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
+
+        Route::get('warehouses', [WarehouseController::class, 'index'])->name('warehouses.index');
+        Route::post('warehouses', [WarehouseController::class, 'store'])->name('warehouses.store');
+        Route::patch('warehouses/{warehouse}/toggle', [WarehouseController::class, 'toggle'])->name('warehouses.toggle');
+
+        Route::get('accounting', [AccountingController::class, 'index'])->name('accounting.index');
+        Route::get('accounting/export', [AccountingController::class, 'export'])->name('accounting.export');
 
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit.index');
     });

@@ -105,3 +105,25 @@ CI: `.github/workflows/tests.yml` runs the test suite on every push.
 The interface uses a matcha green (primary) and sakura pink (accent) palette.
 All design tokens (colors, font, buttons, cards, form inputs) live in one file:
 `resources/views/partials/theme.blade.php`. Change the palette there and every page follows.
+
+## Payments (Midtrans, real API — sandbox money)
+1. Create a free account at https://dashboard.sandbox.midtrans.com, copy **Server Key** and **Client Key** (Settings > Access Keys).
+2. Put them in `.env`: `MIDTRANS_SERVER_KEY=SB-Mid-server-...`, `MIDTRANS_CLIENT_KEY=SB-Mid-client-...`, `MIDTRANS_IS_PRODUCTION=false`, then `php artisan config:clear`.
+3. Open a shipment, click **Pay now**: Midtrans Snap offers QRIS, GoPay/e-wallets, BCA/BNI/BRI/Permata/CIMB virtual accounts, Mandiri bill and cards.
+4. Simulate the payment at https://simulator.sandbox.midtrans.com, then click **refresh status** (works on localhost; no webhook needed).
+5. Webhook (needs a public URL, e.g. ngrok): set Settings > Payment > Notification URL to `https://<your-host>/midtrans/notification`. The signature (SHA-512) is verified.
+Fee = weight x `CARGOTRACE_RATE_PER_KG` (default Rp 5.000), minimum `CARGOTRACE_MIN_FEE` (Rp 50.000). Never commit real keys.
+
+## UAS feature set (final)
+- **UI:** matcha-to-pink theme, professional login, left sidebar, live clock, world map with plane / truck / ship icons, destination pin and road routes (OSRM).
+- **Languages (whole app, all roles):** Indonesian, English, Chinese, Japanese, Spanish, French, Arabic (RTL). Dictionary: `public/js/ct-dict.js`; engine: `public/js/ct-i18n.js`. Add a language by adding a column to the dictionary and the code to `SUPPORTED`.
+- **Country selector:** picks a country, switches the language and filters the dashboard map.
+- **Payments:** Midtrans sandbox (QRIS, VA banks, e-wallet, card) - see the Payments section above.
+- **Multi-currency:** display currency selector in the top bar (`config/cargotrace.php` -> `currencies`, static rates). Payments are charged in IDR.
+- **Multi-warehouse:** Admin > Warehouses (capacity and load), warehouse selectable on each shipment.
+- **Accounting:** Admin > Accounting (revenue, pending, monthly revenue, ledger, CSV export).
+- **Delay forecast:** dashboard table from `app/Services/ForecastService.php` (statistical model: lane history + open exceptions).
+- **ERP integration:** `GET /api/erp/shipments` and `GET /api/erp/payments` with header `X-ERP-KEY: <ERP_API_KEY>`; optional outbound `ERP_WEBHOOK_URL` receives `payment.paid`.
+- **Mobile app (PWA):** installable (Chrome/Edge/Android: "Install app" button). Requires HTTPS or localhost.
+
+Setup after unzipping: copy `.env`, set Midtrans keys, then `php artisan migrate:fresh --seed`.

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CarrierController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ErpController;
 use App\Http\Controllers\Api\ExceptionController;
 use App\Http\Controllers\Api\ExternalApiController;
 use App\Http\Controllers\Api\LocationController;
@@ -14,6 +15,12 @@ use Illuminate\Support\Facades\Route;
 
 // All routes below are prefixed with /api (see bootstrap/app.php) and named api.*
 Route::name('api.')->group(function () {
+    // ---- ERP integration (X-ERP-KEY header) ----------------------------
+    Route::middleware(['erp.key', 'throttle:60,1'])->prefix('erp')->name('erp.')->group(function () {
+        Route::get('shipments', [ErpController::class, 'shipments'])->name('shipments');
+        Route::get('payments', [ErpController::class, 'payments'])->name('payments');
+    });
+
     // ---- Authentication ------------------------------------------------
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:10,1')->name('register');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login');

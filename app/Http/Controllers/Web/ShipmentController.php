@@ -68,6 +68,8 @@ class ShipmentController extends Controller
         $exceptions = $shipment->exceptions()->with('reporter')->orderByDesc('detected_at')->get();
 
         $mapData = [
+            'mode' => $shipment->carrier->transport_mode ?? 'SEA',
+            'number' => $shipment->shipment_number,
             'origin' => ['name' => $shipment->origin->name, 'lat' => $shipment->origin->latitude, 'lng' => $shipment->origin->longitude],
             'destination' => ['name' => $shipment->destination->name, 'lat' => $shipment->destination->latitude, 'lng' => $shipment->destination->longitude],
             'points' => $events->filter(fn ($e) => $e->latitude !== null && $e->longitude !== null)->map(fn ($e) => [
@@ -117,6 +119,7 @@ class ShipmentController extends Controller
     {
         return [
             'customers' => User::where('role', User::ROLE_CUSTOMER)->orderBy('name')->get(['id', 'name', 'email']),
+            'warehouses' => \App\Models\Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'carriers' => Carrier::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'locations' => Location::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
             'cargoTypes' => config('cargotrace.cargo_types'),

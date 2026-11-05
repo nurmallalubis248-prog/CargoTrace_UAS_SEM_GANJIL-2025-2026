@@ -64,6 +64,8 @@
     </div>
 </div>
 
+@include('payments._card', ['shipment' => $shipment->loadMissing('payments')])
+
 <div class="card mt-4">
     <h2 class="mb-2 font-semibold">Route map</h2>
     <div id="map" class="h-96 w-full rounded-lg"></div>
@@ -213,19 +215,16 @@
 
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ asset('js/ct-map.js') }}"></script>
 <script>
 (function () {
     const data = @json($mapData);
-    const map = L.map('map').setView([15, 80], 2);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    const map = CT.baseMap('map', [15, 80], 3);
 
     function popup(lines) {
         const box = document.createElement('div');
         lines.filter(Boolean).forEach((t, i) => {
-            const d = document.createElement('div'); d.textContent = t;
+            const d = document.createElement('div'); d.textContent = CT.tx(t);
             if (i === 0) { d.style.fontWeight = '600'; }
             box.appendChild(d);
         });
@@ -248,12 +247,15 @@
         bounds.push([p.lat, p.lng]);
     });
 
-    L.circleMarker([data.destination.lat, data.destination.lng], { radius: 9, color: '#9E3256', fillColor: '#E67B9C', fillOpacity: 1 })
-        .bindPopup(popup(['Destination', data.destination.name])).addTo(map);
+    CT.pin([data.destination.lat, data.destination.lng]).bindPopup(popup(['Destination', data.destination.name])).addTo(map);
     bounds.push([data.destination.lat, data.destination.lng]);
 
-    L.polyline(path, { color: '#506E33', weight: 3 }).addTo(map);
-    L.polyline([path[path.length - 1], [data.destination.lat, data.destination.lng]], { color: '#C5CBBB', weight: 2, dashArray: '6 8' }).addTo(map);
+    const here = path[path.length - 1], dest = [data.destination.lat, data.destination.lng];
+    const routes = L.layerGroup().addTo(map);
+    CT.route(routes, path, data.mode, CT.routeStyle(data.mode));                                   // traveled part
+    CT.route(routes, [here, dest], data.mode, { color: '#E0394F', weight: 4, opacity: 0.9 });      // remaining part (red, like courier apps)
+    // Vehicle icon (plane / truck / ship) at the latest known position.
+    CT.vehicle(data.mode, here, false, CT.bearing(here, dest)).bindPopup(popup([data.number, CT.modeLabel(data.mode)])).addTo(map);
     map.fitBounds(bounds, { padding: [40, 40] });
 
     // Weather (external API; failures are shown, never thrown)

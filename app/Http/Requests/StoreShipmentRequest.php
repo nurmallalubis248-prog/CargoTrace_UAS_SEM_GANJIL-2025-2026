@@ -31,6 +31,7 @@ class StoreShipmentRequest extends FormRequest
         return [
             'reference_number' => ['nullable', 'string', 'max:50'],
             'customer_id' => ['required', 'integer', Rule::exists('users', 'id')->where('role', 'customer')],
+            'warehouse_id' => ['nullable', 'integer', Rule::exists('warehouses', 'id')->where('is_active', true)],
             'carrier_id' => ['required', 'integer', Rule::exists('carriers', 'id')->where('is_active', true)],
             'origin_id' => ['required', 'integer', Rule::exists('locations', 'id')->where('is_active', true)],
             'destination_id' => ['required', 'integer', 'different:origin_id', Rule::exists('locations', 'id')->where('is_active', true)],

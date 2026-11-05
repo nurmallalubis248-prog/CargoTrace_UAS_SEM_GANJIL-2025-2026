@@ -16,4 +16,16 @@ return [
         'base_url' => env('GEOCODING_BASE_URL', 'https://nominatim.openstreetmap.org/search'),
         'user_agent' => env('GEOCODING_USER_AGENT', 'CargoTrace-UAS/1.0'),
     ],
+
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
+    ],
+
+    'erp' => [
+        'api_key' => env('ERP_API_KEY'),
+        'webhook_url' => env('ERP_WEBHOOK_URL'),
+    ],
+
 ];

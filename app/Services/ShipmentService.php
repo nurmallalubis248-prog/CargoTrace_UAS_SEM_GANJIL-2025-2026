@@ -30,7 +30,7 @@ class ShipmentService
 
             $origin = Location::findOrFail($data['origin_id']);
 
-            $shipment = new Shipment($data); // only $fillable fields are accepted
+            $shipment = new Shipment(\Illuminate\Support\Arr::except($data, ['items'])); // 'items' is a relation, never a column
             $shipment->shipment_number = $this->generateNumber();
             $shipment->created_by = $actor->id;
             $shipment->current_status = ShipmentStatus::CREATED;
@@ -84,7 +84,7 @@ class ShipmentService
         return DB::transaction(function () use ($shipment, $data, $actor) {
             $items = $data['items'] ?? null;
 
-            $shipment->fill($data);
+            $shipment->fill(\Illuminate\Support\Arr::except($data, ['items']));
             if ($shipment->isDirty('expected_arrival_at')) {
                 // Nothing has moved yet, so the ETA follows the new plan.
                 $shipment->estimated_arrival_at = $shipment->expected_arrival_at;

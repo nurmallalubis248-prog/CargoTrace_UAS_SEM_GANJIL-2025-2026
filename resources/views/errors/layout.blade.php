@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('code') | CargoTrace</title>
     @include('partials.theme')
+    <script src="{{ asset('js/ct-dict.js') }}"></script>
+    <script src="{{ asset('js/ct-i18n.js') }}"></script>
 </head>
 <body class="flex min-h-screen items-center justify-center bg-matcha-50 p-4">
     <div class="max-w-md rounded-2xl border border-matcha-100 border-t-4 border-t-sakura-400 bg-white p-8 text-center shadow-lg">

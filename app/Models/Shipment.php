@@ -21,7 +21,7 @@ class Shipment extends Model
     // Only user-supplied master data is mass-assignable.
     // shipment_number, created_by, current_status, ETA/delay and current_* fields are set by services.
     protected $fillable = [
-        'reference_number', 'customer_id', 'carrier_id', 'origin_id', 'destination_id',
+        'reference_number', 'customer_id', 'carrier_id', 'origin_id', 'destination_id', 'warehouse_id',
         'cargo_type', 'weight_kg', 'volume_cbm', 'expected_departure_at', 'expected_arrival_at',
     ];
 
@@ -63,6 +63,16 @@ class Shipment extends Model
     public function origin(): BelongsTo
     {
         return $this->belongsTo(Location::class, 'origin_id');
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 
     public function destination(): BelongsTo

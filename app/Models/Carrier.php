@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Carrier extends Model
 {
-    protected $fillable = ['name', 'code', 'contact_email', 'is_active'];
+    protected $fillable = ['name', 'code', 'transport_mode', 'contact_email', 'is_active'];
 
     protected function casts(): array
     {
