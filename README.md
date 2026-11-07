@@ -3,7 +3,7 @@
 Web Programming 2 · Final Project (UAS). A Laravel application that lets logistics companies and their customers follow shipments across the world: lifecycle, tracking timeline, live map, ETA/delay detection, delay forecast, exception management, payments, accounting, warehouses, dashboard, multi-language UI and a REST API.
 
 > **Repository:** https://github.com/nurmallalubis248-prog/CargoTrace_UAS_SEM_GANJIL-2025-2026
-> **Live demo:** _add your deployed URL here_
+> **Live demo:** _add your deployed URL here after following [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)_ (demo accounts are listed below)
 
 ## Problem and solution
 Shipment information is scattered, customers cannot see the latest status, delays and exceptions are invisible, and operators have no place to prioritise follow-ups. CargoTrace centralises shipments, carriers, locations, warehouses and tracking events, shows the journey on a map and timeline, flags and forecasts delays with deterministic rules, lets operators manage exceptions, and lets customers pay freight fees online.
@@ -97,7 +97,17 @@ php artisan migrate:fresh --seed
 | `SHOW_DEMO_ACCOUNTS` | Show demo accounts on the login page |
 | `EXTERNAL_API_TIMEOUT`, `WEATHER_BASE_URL`, `GEOCODING_BASE_URL`, `GEOCODING_USER_AGENT` | External API settings (set your own contact in the Nominatim user agent) |
 | `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION` | Midtrans credentials (never commit real keys) |
-| `ERP_API_KEY`, `ERP_WEBHOOK_URL` | ERP integration key and optional outgoing webhook |
+| `ERP_API_KEY`, `ERP_WEBHOOK_URL` | ERP integration key (empty = `/api/erp/*` disabled; generate a random value on every deployment) and optional outgoing webhook |
+
+### Changing the delay thresholds (per-group scenario)
+The delay rule lives in `App\Services\EtaService` and reads its limits from `config/cargotrace.php`, which reads `.env`. No code change is needed:
+
+```env
+CARGOTRACE_DELAY_LOW_MAX_HOURS=12      # 0 < delay <= 12 h  => LOW
+CARGOTRACE_DELAY_MEDIUM_MAX_HOURS=24   # 12 < delay <= 24 h => MEDIUM, above => HIGH
+```
+
+Then run `php artisan config:clear`. Already-saved shipments keep their stored `delay_severity` until their next ETA/tracking update (`EtaService::refresh`); re-run `php artisan migrate:fresh --seed` to re-evaluate the demo data under the new thresholds. `tests/Unit/EtaServiceTest::test_thresholds_are_configurable` covers this behaviour.
 
 ## Payments with Midtrans (sandbox money)
 1. Create a free account at https://dashboard.sandbox.midtrans.com and copy the **Server Key** and **Client Key** (Settings > Access Keys).
@@ -159,6 +169,7 @@ Password hashing (bcrypt) · auth middleware and server-side authorization (poli
 - `docs/DATA_DICTIONARY.md` — tables and columns
 - `docs/ARCHITECTURE.md` — layers and request flow
 - `docs/CODE_GUIDE_ID.md` — code guide (Indonesian)
+- `docs/DEPLOYMENT.md` — step-by-step deployment and pre-submission checklist
 - `postman/` — API collection
 
 ## Known limitations and future work
@@ -175,7 +186,7 @@ Password hashing (bcrypt) · auth middleware and server-side authorization (poli
 - Map tiles and geodata: © OpenStreetMap contributors (ODbL); geocoding via Nominatim; road routes via OSRM public router
 - Weather: Open-Meteo (CC BY 4.0, non-commercial use)
 - Payments: Midtrans (sandbox)
-- **AI usage:** _edit this to describe honestly how you used AI (e.g. "initial scaffold generated with Claude; I reviewed, ran and modified the code and can explain it")._
+- **AI usage:** _Fill in the bracketed parts so they match what really happened, then delete this line._ I used **[tool name, e.g. Claude / ChatGPT / Copilot]** for **[e.g. initial project scaffold, test drafts, README wording, debugging]**. I did **not** use it for **[e.g. the database design / business rules]**. Every AI-assisted file was run, tested and reviewed by me before committing, and I can explain the main flows (`TrackingService`, `EtaService`, `ShipmentPolicy`, the migrations) and change them live. Code I did not write is limited to the libraries listed above.
 
 ## UI theme
 The interface uses a matcha green (primary) and sakura pink (accent) palette. All design tokens (colors, font, buttons, cards, form inputs) live in `resources/views/partials/theme.blade.php`. Change the palette there and every page follows.
