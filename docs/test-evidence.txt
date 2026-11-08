@@ -1,6 +1,6 @@
 ﻿
    PASS  Tests\Unit\EtaServiceTest
-  Γ£ô classify applies default thresholds with data set "early"       0.13s  
+  Γ£ô classify applies default thresholds with data set "early"       0.22s  
   Γ£ô classify applies default thresholds with data set "exactly onΓÇª  0.01s  
   Γ£ô classify applies default thresholds with data set "tiny delay"  0.01s  
   Γ£ô classify applies default thresholds with data set "upper l o wΓÇª 0.01s  
@@ -9,122 +9,126 @@
   Γ£ô classify applies default thresholds with data set "just aboveΓÇª  0.01s  
   Γ£ô classify applies default thresholds with data set "very late"   0.01s  
   Γ£ô thresholds are configurable                                     0.01s  
-  Γ£ô evaluate uses eta while in transit and explains the values      0.02s  
+  Γ£ô evaluate uses eta while in transit and explains the values      0.03s  
   Γ£ô evaluate uses actual arrival when delivered and ignores cancelΓÇª 0.01s  
 
    PASS  Tests\Unit\ExampleTest
-  Γ£ô that true is true                                               0.01s  
+  Γ£ô that true is true                                               0.02s  
 
    PASS  Tests\Feature\AuthTest
-  Γ£ô api register creates customer with hashed password and ignoresΓÇª 0.12s  
-  Γ£ô api register validates input                                    0.01s  
-  Γ£ô api login with valid credentials returns token                  0.01s  
-  Γ£ô api login with invalid credentials returns 401                  0.01s  
-  Γ£ô api requires authentication                                     0.01s  
-  Γ£ô api token grants access and logout revokes tokens               0.02s  
-  Γ£ô web guest is redirected to login                                0.02s  
-  Γ£ô web login with wrong password fails and correct password works  0.22s  
+  Γ£ô api register creates customer with hashed password and ignoresΓÇª 0.23s  
+  Γ£ô api register validates input                                    0.02s  
+  Γ£ô api login with valid credentials returns token                  0.02s  
+  Γ£ô api login with invalid credentials returns 401                  0.02s  
+  Γ£ô api requires authentication                                     0.03s  
+  Γ£ô api token grants access and logout revokes tokens               0.03s  
+  Γ£ô web guest is redirected to login                                0.03s  
+  Γ£ô web login with wrong password fails and correct password works  0.24s  
 
    PASS  Tests\Feature\DashboardTest
-  Γ£ô dashboard numbers come from the database and are scoped by rolΓÇª 0.09s  
+  Γ£ô dashboard numbers come from the database and are scoped by rolΓÇª 0.14s  
   Γ£ô dashboard with no data does not fail                            0.02s  
-  Γ£ô web pages render for each role and enforce access               0.10s  
-  Γ£ô web business rule violation redirects back with error insteadΓÇª  0.03s  
+  Γ£ô web pages render for each role and enforce access               0.14s  
+  Γ£ô web business rule violation redirects back with error insteadΓÇª  0.04s  
 
    PASS  Tests\Feature\DelayFlowTest
-  Γ£ô eta update flags delay with severity and notifies customer      0.04s  
-  Γ£ô eta update requires a new eta                                   0.02s  
-  Γ£ô delay filter works server side                                  0.04s  
+  Γ£ô eta update flags delay with severity and notifies customer      0.05s  
+  Γ£ô eta update requires a new eta                                   0.03s  
+  Γ£ô delay filter works server side                                  0.06s  
 
    PASS  Tests\Feature\DelayReasonTest
   Γ£ô no reason when not delayed or nothing explains the delay        0.03s  
-  Γ£ô reason comes from the exception type                            0.02s  
-  Γ£ô an open exception wins over a resolved one                      0.02s  
-  Γ£ô dashboard lists delayed shipments with route and reason         0.03s  
-  Γ£ô shipment list can filter by open exception and shows the reasoΓÇª 0.03s  
+  Γ£ô reason comes from the exception type                            0.03s  
+  Γ£ô an open exception wins over a resolved one                      0.03s  
+  Γ£ô dashboard lists delayed shipments with route and reason         0.04s  
+  Γ£ô shipment list can filter by open exception and shows the reasoΓÇª 0.04s  
 
    PASS  Tests\Feature\ErpApiTest
   Γ£ô requests without the key are rejected                           0.02s  
   Γ£ô wrong key is rejected                                           0.01s  
   Γ£ô endpoints are disabled when no key is configured                0.01s  
-  Γ£ô a logged in admin still needs the erp key                       0.01s  
+  Γ£ô a logged in admin still needs the erp key                       0.02s  
   Γ£ô valid key lists shipments with related data                     0.02s  
   Γ£ô updated since filters out older shipments                       0.02s  
   Γ£ô per page is capped at 200                                       0.01s  
-  Γ£ô payments can be filtered by status case insensitively           0.02s  
+  Γ£ô payments can be filtered by status case insensitively           0.03s  
 
    PASS  Tests\Feature\ExampleTest
-  Γ£ô guests are sent to the login page                               0.01s  
-  Γ£ô logged in users are sent to the dashboard                       0.01s  
+  Γ£ô guests are sent to the login page                               0.02s  
+  Γ£ô logged in users are sent to the dashboard                       0.02s  
 
    PASS  Tests\Feature\ExceptionTest
-  Γ£ô operator opens exception with detection time and timeline markΓÇª 0.02s  
+  Γ£ô operator opens exception with detection time and timeline markΓÇª 0.03s  
   Γ£ô validation and authorization                                    0.03s  
-  Γ£ô status moves forward and resolution time is stored              0.03s  
-  Γ£ô customer cannot update exception                                0.02s  
+  Γ£ô status moves forward and resolution time is stored              0.05s  
+  Γ£ô customer cannot update exception                                0.03s  
 
    PASS  Tests\Feature\ExternalApiTest
-  Γ£ô weather success                                                 0.04s  
-  Γ£ô weather provider error is handled gracefully                    0.02s  
-  Γ£ô weather timeout is handled gracefully                           0.02s  
-  Γ£ô weather empty payload is handled gracefully                     0.02s  
-  Γ£ô weather respects shipment authorization                         0.02s  
-  Γ£ô geocoding for staff                                             0.02s  
-  Γ£ô geocoding provider error is handled gracefully                  0.01s  
-  Γ£ô geocoding is forbidden for customers                            0.01s  
+  Γ£ô weather success                                                 0.09s  
+  Γ£ô weather provider error is handled gracefully                    0.03s  
+  Γ£ô weather timeout is handled gracefully                           0.03s  
+  Γ£ô weather empty payload is handled gracefully                     0.03s  
+  Γ£ô weather respects shipment authorization                         0.03s  
+  Γ£ô geocoding for staff                                             0.03s  
+  Γ£ô geocoding provider error is handled gracefully                  0.02s  
+  Γ£ô geocoding is forbidden for customers                            0.02s  
+
+   PASS  Tests\Feature\LiveMapDataTest
+  Γ£ô dashboard positions carry origin eta and last scan time         0.05s  
+  Γ£ô shipment page embeds the live route data and script             0.04s  
 
    PASS  Tests\Feature\LocaleTest
-  Γ£ô login page ships english source text and the client side switcΓÇª 0.02s  
-  Γ£ô pdf translation groups have the same keys in english and indonΓÇª 0.01s  
-  Γ£ô every delay reason has an indonesian text                       0.01s  
+  Γ£ô login page ships english source text and the client side switcΓÇª 0.03s  
+  Γ£ô pdf translation groups have the same keys in english and indonΓÇª 0.03s  
+  Γ£ô every delay reason has an indonesian text                       0.02s  
 
    PASS  Tests\Feature\PaymentTest
   Γ£ô fee is weight times rate with a minimum                         0.01s  
-  Γ£ô customer can start payment for own shipment                     0.02s  
-  Γ£ô customer cannot pay for someone elses shipment                  0.02s  
+  Γ£ô customer can start payment for own shipment                     0.04s  
+  Γ£ô customer cannot pay for someone elses shipment                  0.03s  
   Γ£ô guest cannot start a payment                                    0.02s  
   Γ£ô already paid shipment cannot be paid twice                      0.02s  
-  Γ£ô provider error removes the pending payment and shows a message  0.02s  
-  Γ£ô missing server key fails gracefully without calling the providΓÇª 0.02s  
+  Γ£ô provider error removes the pending payment and shows a message  0.03s  
+  Γ£ô missing server key fails gracefully without calling the providΓÇª 0.03s  
   Γ£ô webhook with invalid signature is rejected                      0.02s  
-  Γ£ô webhook for unknown order returns 404                           0.01s  
-  Γ£ô settlement webhook marks payment paid                           0.02s  
-  Γ£ô expired and denied notifications map to the right status        0.02s  
+  Γ£ô webhook for unknown order returns 404                           0.02s  
+  Γ£ô settlement webhook marks payment paid                           0.03s  
+  Γ£ô expired and denied notifications map to the right status        0.03s  
   Γ£ô card capture flagged by fraud check is not marked paid          0.02s  
-  Γ£ô a paid payment is never downgraded by a late notification       0.02s  
-  Γ£ô paid notification is forwarded to erp webhook and failures doΓÇª  0.02s  
+  Γ£ô a paid payment is never downgraded by a late notification       0.03s  
+  Γ£ô paid notification is forwarded to erp webhook and failures doΓÇª  0.03s  
 
    PASS  Tests\Feature\ReportTest
-  Γ£ô guests are redirected to login                                  0.02s  
-  Γ£ô customer report only lists their own shipments                  0.03s  
+  Γ£ô guests are redirected to login                                  0.03s  
+  Γ£ô customer report only lists their own shipments                  0.04s  
   Γ£ô filters narrow the report                                       0.03s  
-  Γ£ô invalid filter value is rejected                                0.01s  
-  Γ£ô summary numbers come from the database                          0.02s  
+  Γ£ô invalid filter value is rejected                                0.02s  
+  Γ£ô summary numbers come from the database                          0.03s  
   Γ£ô pdf view follows the selected language and shows the delay reaΓÇª 0.03s  
   Γ£ô pdf language must be a supported one                            0.02s  
-  Γ£ô pdf is downloadable when the engine is installed                0.25s  
+  Γ£ô pdf is downloadable when the engine is installed                0.39s  
 
    PASS  Tests\Feature\ShipmentApiTest
-  Γ£ô operator can create shipment and initial event is recorded      0.03s  
+  Γ£ô operator can create shipment and initial event is recorded      0.04s  
   Γ£ô customer cannot create shipment                                 0.02s  
   Γ£ô validation rejects bad data                                     0.02s  
-  Γ£ô customer only sees and opens own shipments                      0.03s  
-  Γ£ô staff see all shipments with server side pagination and filterΓÇª 0.05s  
-  Γ£ô operator can only update shipments they created                 0.03s  
-  Γ£ô status cannot be changed through update endpoint                0.02s  
-  Γ£ô only admin can delete and only when created                     0.02s  
-  Γ£ô carrier and location endpoints are role protected               0.02s  
+  Γ£ô customer only sees and opens own shipments                      0.04s  
+  Γ£ô staff see all shipments with server side pagination and filterΓÇª 0.06s  
+  Γ£ô operator can only update shipments they created                 0.05s  
+  Γ£ô status cannot be changed through update endpoint                0.03s  
+  Γ£ô only admin can delete and only when created                     0.04s  
+  Γ£ô carrier and location endpoints are role protected               0.05s  
 
    PASS  Tests\Feature\TrackingTest
   Γ£ô valid status flow updates shipment and keeps history            0.04s  
-  Γ£ô invalid status transition is rejected with 422                  0.02s  
-  Γ£ô delivered shipment is terminal                                  0.04s  
+  Γ£ô invalid status transition is rejected with 422                  0.03s  
+  Γ£ô delivered shipment is terminal                                  0.05s  
   Γ£ô event time must not be in the future or before latest event     0.03s  
   Γ£ô checkpoint updates current location and validates coordinates   0.03s  
-  Γ£ô timeline is chronological and marks exceptions                  0.03s  
+  Γ£ô timeline is chronological and marks exceptions                  0.04s  
   Γ£ô exception event type cannot be posted directly and customers cΓÇª 0.03s  
-  Γ£ô customer is notified when status changes                        0.02s  
+  Γ£ô customer is notified when status changes                        0.03s  
 
-  Tests:    96 passed (362 assertions)
-  Duration: 2.98s
+  Tests:    98 passed (372 assertions)
+  Duration: 4.33s
 
