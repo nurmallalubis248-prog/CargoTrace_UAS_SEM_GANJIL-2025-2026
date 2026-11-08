@@ -107,6 +107,27 @@ class Shipment extends Model
         return $query;
     }
 
+    /**
+     * Why is this shipment late? Taken from its exceptions: an unresolved one first, otherwise the latest.
+     * Returns null when the shipment is not delayed or no exception explains the delay yet.
+     */
+    public function delayReason(): ?array
+    {
+        if (! $this->is_delayed) {
+            return null;
+        }
+        $all = $this->relationLoaded('exceptions') ? $this->exceptions : $this->exceptions()->get();
+        $pick = $all->whereNull('resolved_at')->sortByDesc('detected_at')->first()
+            ?? $all->sortByDesc('detected_at')->first();
+
+        return $pick ? [
+            'type' => $pick->type,
+            'label' => $pick->type->label(),
+            'description' => $pick->description,
+            'open' => $pick->resolved_at === null,
+        ] : null;
+    }
+
     /** Server-side search & filter. All values are bound parameters (SQL-injection safe). */
     public function scopeFilter(Builder $query, array $f): Builder
     {
@@ -127,6 +148,8 @@ class Shipment extends Model
                 'shipments.is_delayed',
                 filter_var($f['delayed'], FILTER_VALIDATE_BOOLEAN)
             ))
+            ->when(($f['exception'] ?? '') === 'open', fn (Builder $q) => $q->whereHas('exceptions', fn ($e) => $e->open()))
+            ->when(($f['exception'] ?? '') === 'any', fn (Builder $q) => $q->has('exceptions'))
             ->when(! empty($f['date_from']), fn (Builder $q) => $q->whereDate('shipments.expected_arrival_at', '>=', $f['date_from']))
             ->when(! empty($f['date_to']), fn (Builder $q) => $q->whereDate('shipments.expected_arrival_at', '<=', $f['date_to']));
     }

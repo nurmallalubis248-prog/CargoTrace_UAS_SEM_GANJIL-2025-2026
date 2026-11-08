@@ -27,7 +27,7 @@ class ShipmentController extends Controller
         $filters = $request->validated();
 
         $shipments = Shipment::query()
-            ->with(['customer', 'carrier', 'origin', 'destination'])
+            ->with(['customer', 'carrier', 'origin', 'destination', 'exceptions'])
             ->visibleTo($request->user())
             ->filter($filters)
             ->sortBy($filters['sort'] ?? null, $filters['dir'] ?? null)

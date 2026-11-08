@@ -16,6 +16,23 @@ return [
         'logout' => 'Keluar',
         'menu' => 'Menu',
     ],
+    'exception_types' => [
+        'CUSTOMS_HOLD' => 'Tertahan di bea cukai',
+        'WEATHER_DELAY' => 'Cuaca buruk',
+        'PORT_CONGESTION' => 'Pelabuhan padat',
+        'DAMAGED' => 'Barang rusak',
+        'MISROUTED' => 'Salah rute',
+        'DOCUMENTATION_ISSUE' => 'Dokumen tidak lengkap',
+    ],
+    'reports' => [
+        'title' => 'Laporan pengiriman', 'generated' => 'Dibuat', 'by' => 'oleh', 'filters' => 'Filter', 'none' => 'tidak ada',
+        'total' => 'Total pengiriman', 'in_transit' => 'Dalam perjalanan', 'delivered' => 'Terkirim', 'delayed' => 'Terlambat',
+        'open_exceptions' => 'Eksepsi terbuka', 'delay_rate' => 'Tingkat keterlambatan', 'revenue' => 'Pendapatan diterima',
+        'number' => 'Pengiriman', 'route' => 'Rute', 'carrier' => 'Pengangkut', 'status' => 'Status', 'eta' => 'Perkiraan tiba',
+        'delay' => 'Keterlambatan', 'reason' => 'Alasan', 'on_time' => 'Tepat waktu', 'no_reason' => 'Alasan belum dicatat',
+        'truncated' => 'Hanya :n pengiriman pertama yang ditampilkan.', 'empty' => 'Tidak ada pengiriman yang cocok dengan filter ini.',
+        'page' => 'Halaman',
+    ],
     'roles' => ['admin' => 'Administrator', 'operator' => 'Operator Logistik', 'customer' => 'Pelanggan'],
     'common' => [
         'fix_following' => 'Mohon perbaiki hal berikut:',

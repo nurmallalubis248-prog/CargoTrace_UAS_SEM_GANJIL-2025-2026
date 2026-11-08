@@ -32,6 +32,14 @@
         </select>
     </div>
     <div>
+        <label class="label">Exception</label>
+        <select class="input" name="exception">
+            <option value="">All</option>
+            <option value="open" @selected(($filters['exception'] ?? '') === 'open')>Open exceptions</option>
+            <option value="any" @selected(($filters['exception'] ?? '') === 'any')>Any exception</option>
+        </select>
+    </div>
+    <div>
         <label class="label">Carrier</label>
         <select class="input" name="carrier_id">
             <option value="">All</option>

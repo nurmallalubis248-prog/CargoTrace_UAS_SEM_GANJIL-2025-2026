@@ -16,6 +16,23 @@ return [
         'logout' => 'Log out',
         'menu' => 'Menu',
     ],
+    'exception_types' => [
+        'CUSTOMS_HOLD' => 'Held at customs',
+        'WEATHER_DELAY' => 'Bad weather',
+        'PORT_CONGESTION' => 'Port congestion',
+        'DAMAGED' => 'Cargo damaged',
+        'MISROUTED' => 'Misrouted',
+        'DOCUMENTATION_ISSUE' => 'Incomplete documents',
+    ],
+    'reports' => [
+        'title' => 'Shipment report', 'generated' => 'Generated', 'by' => 'by', 'filters' => 'Filters', 'none' => 'none',
+        'total' => 'Total shipments', 'in_transit' => 'In transit', 'delivered' => 'Delivered', 'delayed' => 'Delayed',
+        'open_exceptions' => 'Open exceptions', 'delay_rate' => 'Delay rate', 'revenue' => 'Revenue received',
+        'number' => 'Shipment', 'route' => 'Route', 'carrier' => 'Carrier', 'status' => 'Status', 'eta' => 'Expected arrival',
+        'delay' => 'Delay', 'reason' => 'Reason', 'on_time' => 'On time', 'no_reason' => 'Reason not recorded',
+        'truncated' => 'Only the first :n shipments are listed.', 'empty' => 'No shipments match these filters.',
+        'page' => 'Page',
+    ],
     'roles' => ['admin' => 'Administrator', 'operator' => 'Logistics Operator', 'customer' => 'Customer'],
     'common' => [
         'fix_following' => 'Please fix the following:',
