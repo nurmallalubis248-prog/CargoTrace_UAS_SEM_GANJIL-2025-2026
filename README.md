@@ -109,6 +109,12 @@ CARGOTRACE_DELAY_MEDIUM_MAX_HOURS=24   # 12 < delay <= 24 h => MEDIUM, above => 
 
 Then run `php artisan config:clear`. Already-saved shipments keep their stored `delay_severity` until their next ETA/tracking update (`EtaService::refresh`); re-run `php artisan migrate:fresh --seed` to re-evaluate the demo data under the new thresholds. `tests/Unit/EtaServiceTest::test_thresholds_are_configurable` covers this behaviour.
 
+## Reports (PDF) and delay reasons
+- **Reports** (sidebar, all roles): filter by status, delay, exception, carrier and expected-arrival dates, preview the numbers, then **Download PDF**. Customers only get their own shipments. Each download is written to the audit log.
+- PDF engine: `barryvdh/laravel-dompdf`. Install once with `composer require barryvdh/laravel-dompdf` and commit `composer.json` + `composer.lock`. Without it the page still works and the download button shows a clear message.
+- **Delay reason:** a late shipment shows *why* (for example "Incomplete documents", "Held at customs", "Bad weather", "Port congestion") taken from the exception an operator reported on it (`CUSTOMS_HOLD`, `DOCUMENTATION_ISSUE`, `WEATHER_DELAY`, ...). If nobody has reported one yet it says "Reason not recorded yet". It appears in the shipment list, the dashboard "Delayed shipments and reasons" table and the PDF.
+- **Dashboard cards and charts are clickable** and open the shipment list already filtered (status, delayed, open exception, carrier, severity).
+
 ## Payments with Midtrans (sandbox money)
 1. Create a free account at https://dashboard.sandbox.midtrans.com and copy the **Server Key** and **Client Key** (Settings > Access Keys).
 2. Put them in `.env` (`MIDTRANS_SERVER_KEY=SB-Mid-server-...`, `MIDTRANS_CLIENT_KEY=SB-Mid-client-...`, `MIDTRANS_IS_PRODUCTION=false`), then run `php artisan config:clear`.

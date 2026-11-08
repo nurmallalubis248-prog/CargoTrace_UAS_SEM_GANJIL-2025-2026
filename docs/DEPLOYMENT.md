@@ -11,7 +11,7 @@ Target: a public URL where a recruiter can log in with a demo account. Any host 
 ```bash
 git clone https://github.com/nurmallalubis248-prog/CargoTrace_UAS_SEM_GANJIL-2025-2026.git cargotrace
 cd cargotrace
-composer install --no-dev --optimize-autoloader
+composer install --no-dev --optimize-autoloader   # includes barryvdh/laravel-dompdf (needed for Reports > Download PDF)
 cp .env.example .env
 php artisan key:generate
 ```
