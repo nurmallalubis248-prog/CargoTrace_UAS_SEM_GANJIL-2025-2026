@@ -48,7 +48,9 @@
         background:linear-gradient(135deg,#506E33,#86A85D); border:3px solid #fff; box-shadow:0 4px 12px rgba(38,51,26,.35); }
     .ct-veh-late { background:linear-gradient(135deg,#BF3F69,#E67B9C); }
     .leaflet-container { font-family:'Manrope',system-ui,sans-serif; touch-action:none; z-index:0; }
-    .leaflet-container:active { cursor:grabbing !important; }
+    .leaflet-container.ct-grabbing, .leaflet-container.ct-grabbing * { cursor:grabbing !important; }
+    .leaflet-tooltip.ct-bubble { background:#fff; border:0; border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,.25); color:#E0394F; font:700 12px Manrope,sans-serif; padding:4px 10px; white-space:nowrap; }
+    .leaflet-tooltip-top.ct-bubble:before { border-top-color:#fff; }
     .leaflet-container .leaflet-control { z-index:400; }
 </style>
 <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">

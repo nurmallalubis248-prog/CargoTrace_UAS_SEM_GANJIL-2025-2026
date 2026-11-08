@@ -6,6 +6,33 @@
     ROAD: '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M1 5h13v10H1zM14 8h4l3 3v4h-7zM5.5 16.5a2 2 0 1 0 .01 0M17.5 16.5a2 2 0 1 0 .01 0"/></svg>',
     SEA: '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M3 15l2 5h14l2-5-9-3zM11 3h2v6h-2zM6 10l6-2 6 2v2l-6-2-6 2z"/></svg>'
   };
+  /* Mouse/pen panning implemented with pointer events. Leaflet's own drag is bypassed for the mouse (we cancel the
+     compatibility mouse events); touch screens keep using Leaflet's drag + pinch. */
+  CT.enablePan = function (m) {
+    const c = m.getContainer();
+    let st = null;
+    c.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch' || e.button !== 0 || e.shiftKey || st) { return; }
+      if (e.target.closest('.leaflet-control, .leaflet-popup, .leaflet-tooltip')) { return; }
+      e.preventDefault();
+      try { c.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
+      st = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0 };
+      c.classList.add('ct-grabbing');
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!st || e.pointerId !== st.id) { return; }
+      if (e.buttons === 0) { end(e); return; }
+      const dx = e.clientX - st.x, dy = e.clientY - st.y;
+      st.x = e.clientX; st.y = e.clientY; st.moved += Math.abs(dx) + Math.abs(dy);
+      if (dx || dy) { m.panBy([-dx, -dy], { animate: false }); }
+    });
+    function end(e) {
+      if (!st || e.pointerId !== st.id) { return; }
+      const moved = st.moved > 4; st = null; c.classList.remove('ct-grabbing');
+      if (moved) { const stop = (ev) => { ev.stopPropagation(); }; c.addEventListener('click', stop, true); setTimeout(() => c.removeEventListener('click', stop, true), 0); }
+    }
+    window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+  };
   CT.baseMap = function (id, view, zoom) {
     const m = L.map(id, {
       worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomSnap: 0.5, zoomDelta: 1, wheelPxPerZoomLevel: 90,
@@ -42,6 +69,7 @@
       const d = L.DomUtil.create('div'); d.style.cssText = 'background:rgba(255,255,255,.85);padding:2px 8px;border-radius:6px;font:600 11px Manrope,sans-serif;color:#26331A';
       let raf = 0; m.on('mousemove', (e) => { if (raf) { return; } const ll = e.latlng; raf = requestAnimationFrame(() => { raf = 0; const w = m.wrapLatLng(ll); d.textContent = w.lat.toFixed(4) + ', ' + w.lng.toFixed(4); }); }); return d; } });
     m.addControl(new Pos());
+    CT.enablePan(m);
     m.getContainer().style.cursor = 'grab';
     setTimeout(() => m.invalidateSize(), 300); window.addEventListener('resize', () => m.invalidateSize()); window.addEventListener('load', () => m.invalidateSize()); // fixes grey/stuck map when the container size changes after load
     return m;
