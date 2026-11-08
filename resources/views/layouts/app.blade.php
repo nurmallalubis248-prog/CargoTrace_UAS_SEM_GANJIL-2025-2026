@@ -24,7 +24,7 @@
         'audit'     => 'M9 12h6M9 16h6M7 3h7l5 5v13H7zM14 3v5h5',
         'notifications' => 'M18 16v-5a6 6 0 10-12 0v5l-2 2h16zM10 21h4',
     ];
-    $links = [['dashboard','dashboard','dashboard','dashboard'], ['shipments','shipments.index','shipments.*','shipments']];
+    $links = [['dashboard','dashboard','dashboard','dashboard'], ['shipments','shipments.index','shipments.*','shipments'], ['reports','reports.index','reports.*','audit']];
     $adminLinks = $user->isAdmin() ? [['carriers','admin.carriers.index','admin.carriers.*','carriers'], ['locations','admin.locations.index','admin.locations.*','locations'], ['warehouses','admin.warehouses.index','admin.warehouses.*','carriers'], ['accounting','admin.accounting.index','admin.accounting.*','audit'], ['users','admin.users.index','admin.users.*','users'], ['audit','admin.audit.index','admin.audit.*','audit']] : [];
     $links[] = ['notifications','notifications.index','notifications.*','notifications'];
     $renderLink = function ($l) use ($ic) { return $l; };
