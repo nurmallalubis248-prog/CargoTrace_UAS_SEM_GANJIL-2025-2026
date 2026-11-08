@@ -215,7 +215,8 @@
 
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="{{ asset('js/ct-map.js') }}"></script>
+<script src="{{ asset('js/ct-map.js') }}?v={{ filemtime(public_path('js/ct-map.js')) }}"></script>
+<script src="{{ asset('js/ct-live.js') }}?v={{ filemtime(public_path('js/ct-live.js')) }}"></script>
 <script>
 (function () {
     const data = @json($mapData);
@@ -252,10 +253,9 @@
 
     const here = path[path.length - 1], dest = [data.destination.lat, data.destination.lng];
     const routes = L.layerGroup().addTo(map);
-    CT.route(routes, path, data.mode, CT.routeStyle(data.mode));                                   // traveled part
-    CT.route(routes, [here, dest], data.mode, { color: '#E0394F', weight: 4, opacity: 0.9 });      // remaining part (red, like courier apps)
-    // Vehicle icon (plane / truck / ship) at the latest known position.
-    CT.vehicle(data.mode, here, false, CT.bearing(here, dest)).bindPopup(popup([data.number, CT.modeLabel(data.mode)])).addTo(map);
+    // Real-road route (ROAD), great-circle (SEA/AIR), travelled trail, and a vehicle that keeps moving toward the ETA.
+    CT.liveRoute(map, routes, { from: path[0], here: here, dest: dest, mode: data.mode, delayed: data.delayed, done: data.done,
+        lastAt: data.last_ts, eta: data.eta_ts, popup: popup([data.number, CT.modeLabel(data.mode)]), fit: false });
     map.fitBounds(bounds, { padding: [40, 40] });
 
     // Weather (external API; failures are shown, never thrown)

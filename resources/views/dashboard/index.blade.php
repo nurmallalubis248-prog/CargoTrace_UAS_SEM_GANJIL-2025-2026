@@ -104,7 +104,8 @@
 
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="{{ asset('js/ct-map.js') }}"></script>
+<script src="{{ asset('js/ct-map.js') }}?v={{ filemtime(public_path('js/ct-map.js')) }}"></script>
+<script src="{{ asset('js/ct-live.js') }}?v={{ filemtime(public_path('js/ct-live.js')) }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 (function () {
@@ -117,7 +118,16 @@
     const map = CT.baseMap('map', [15, 80], 3);
     const markers = L.layerGroup().addTo(map);
     const overviewLayer = L.layerGroup().addTo(map);   // pin tujuan + garis tipis semua pengiriman
-    const routeLayer = L.layerGroup().addTo(map);      // sorotan merah untuk pengiriman yang diklik
+    const routeLayer = L.layerGroup().addTo(map);      // rute nyata + jejak + kendaraan bergerak untuk pengiriman terpilih
+    let specs = {}, staticMk = {}, activeId = null, live = null;
+    function startLive(id, fit) {
+        const spec = specs[id]; if (!spec) { return; }
+        if (live) { live.stop(); }
+        if (activeId !== null && staticMk[activeId] && !markers.hasLayer(staticMk[activeId])) { markers.addLayer(staticMk[activeId]); }
+        activeId = id;
+        if (staticMk[id]) { markers.removeLayer(staticMk[id]); }   // the moving vehicle replaces the static one
+        live = CT.liveRoute(map, routeLayer, Object.assign({ fit: fit }, spec));
+    }
 
     const charts = {};
     function draw(id, type, labels, values, colors, hrefFor) {
@@ -200,7 +210,7 @@
         const svColor = { LOW: '#E3B341', MEDIUM: '#E67B9C', HIGH: '#B91C1C' };
         draw('chart-severity', 'bar', sv, sv.map((k) => d.delay_by_severity[k]), sv.map((k) => svColor[k] || '#737B69'), (k) => SHIP_URL + '?delayed=1&severity=' + encodeURIComponent(k));
 
-        markers.clearLayers();
+        markers.clearLayers(); specs = {}; staticMk = {};
         const bounds = [], seenDest = {};
         d.positions.filter(CT.inCountry).forEach((p) => {
             const ll = [Number(p.latitude), Number(p.longitude)];
@@ -209,12 +219,12 @@
             const dest = hasDest ? [Number(p.dest_lat), Number(p.dest_lng)] : null;
             const brg = dest ? CT.bearing(ll, dest) : 0;
             const m = CT.vehicle(p.mode, ll, p.delayed, brg).bindPopup(popup(p));
-            m.on('click', () => {   // show destination pin + remaining route for the clicked shipment
-                routeLayer.clearLayers();
-                if (!dest) { return; }
-                CT.pin(dest).addTo(routeLayer);
-                CT.route(routeLayer, [ll, dest], p.mode, { color: '#E0394F', weight: 4, opacity: 0.9 });
-            });
+            staticMk[p.id] = m;
+            if (dest) {
+                specs[p.id] = { from: (p.origin_lat != null && p.origin_lng != null) ? [Number(p.origin_lat), Number(p.origin_lng)] : ll, here: ll, dest: dest,
+                    mode: p.mode, delayed: p.delayed, done: false, lastAt: p.last_ts, eta: p.eta_ts, popup: popup(p) };
+                m.on('click', () => startLive(p.id, true));
+            }
             markers.addLayer(m);
             bounds.push(ll);
             if (dest) {   // titik tujuan + garis menuju tujuan langsung tampil
@@ -226,6 +236,9 @@
         });
         $('map-empty').classList.toggle('hidden', bounds.length > 0);
         if (bounds.length) { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5 }); }
+        const ids = Object.keys(specs);
+        const useId = (activeId !== null && specs[activeId]) ? activeId : (ids.length ? ids[0] : null);
+        if (useId !== null) { startLive(useId, false); }
     }
 
     // Clock + calendar

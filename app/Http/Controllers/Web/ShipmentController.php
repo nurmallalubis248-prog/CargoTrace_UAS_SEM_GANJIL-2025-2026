@@ -70,6 +70,10 @@ class ShipmentController extends Controller
         $mapData = [
             'mode' => $shipment->carrier->transport_mode ?? 'SEA',
             'number' => $shipment->shipment_number,
+            'delayed' => (bool) $shipment->is_delayed,
+            'done' => $shipment->current_status->value === 'DELIVERED',
+            'last_ts' => $shipment->last_event_at ? $shipment->last_event_at->getTimestamp() * 1000 : null,
+            'eta_ts' => ($shipment->estimated_arrival_at ?? $shipment->expected_arrival_at)?->getTimestamp() * 1000 ?: null,
             'origin' => ['name' => $shipment->origin->name, 'lat' => $shipment->origin->latitude, 'lng' => $shipment->origin->longitude],
             'destination' => ['name' => $shipment->destination->name, 'lat' => $shipment->destination->latitude, 'lng' => $shipment->destination->longitude],
             'points' => $events->filter(fn ($e) => $e->latitude !== null && $e->longitude !== null)->map(fn ($e) => [
