@@ -23,14 +23,14 @@ class DashboardService
             ->map(fn ($c) => (int) $c)
             ->all();
 
-        $byCarrier = $base()->toBase()
+        $carrierRows = $base()->toBase()
             ->join('carriers', 'carriers.id', '=', 'shipments.carrier_id')
-            ->select('carriers.name', DB::raw('count(*) as c'))
-            ->groupBy('carriers.name')
+            ->select('carriers.id', 'carriers.name', DB::raw('count(*) as c'))
+            ->groupBy('carriers.id', 'carriers.name')
             ->orderByDesc('c')
-            ->pluck('c', 'name')
-            ->map(fn ($c) => (int) $c)
-            ->all();
+            ->get();
+        $byCarrier = $carrierRows->pluck('c', 'name')->map(fn ($c) => (int) $c)->all();
+        $carrierIds = $carrierRows->pluck('id', 'name')->all();
 
         $bySeverity = $base()->where('is_delayed', true)->toBase()
             ->select('shipments.delay_severity', DB::raw('count(*) as c'))
@@ -83,7 +83,31 @@ class DashboardService
                 'url' => route('shipments.show', $s),
             ])->values()->all();
 
+        // Late shipments with the reason taken from their exceptions (customs, documents, weather, ...).
+        $delayedList = $base()
+            ->where('is_delayed', true)
+            ->where('current_status', '!=', ShipmentStatus::CANCELLED->value)
+            ->with(['origin', 'destination', 'exceptions'])
+            ->orderByDesc('delay_hours')
+            ->limit(8)
+            ->get()
+            ->map(function (Shipment $s) {
+                $reason = $s->delayReason();
+
+                return [
+                    'number' => $s->shipment_number,
+                    'route' => ($s->origin?->name ?? '?').' → '.($s->destination?->name ?? '?'),
+                    'delay_hours' => round((float) $s->delay_hours, 1),
+                    'severity' => $s->delay_severity,
+                    'reason' => $reason['label'] ?? null,
+                    'detail' => $reason['description'] ?? null,
+                    'url' => route('shipments.show', $s),
+                ];
+            })->values()->all();
+
         return [
+            'delayed_list' => $delayedList,
+            'carrier_ids' => $carrierIds,
             'forecast' => app(ForecastService::class)->forecast($base()),
             'payments' => [
                 'paid_amount' => (int) \App\Models\Payment::where('status', 'PAID')->whereIn('shipment_id', $base()->select('shipments.id'))->sum('amount'),

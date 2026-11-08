@@ -19,23 +19,32 @@
     Could not load dashboard data. Please refresh the page.
 </div>
 
+@php
+    $isAdmin = auth()->user()->isAdmin();
+    $row1 = [
+        ['k-shipments', 'total', route('shipments.index')],
+        ['k-transit', 'transit', route('shipments.index', ['status' => 'IN_TRANSIT'])],
+        ['k-delivered', 'delivered', route('shipments.index', ['status' => 'DELIVERED'])],
+        ['k-delayed', 'delayed', route('shipments.index', ['delayed' => 1])],
+        ['k-exceptions', 'exceptions', route('shipments.index', ['exception' => 'open'])],
+        ['k-delay-rate', 'delayRate', route('reports.index', ['delayed' => 1])],
+    ];
+    $cardCls = 'card block transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-matcha-400';
+@endphp
 <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-    @foreach([
-        ['k-shipments', 'total'], ['k-transit', 'transit'], ['k-delivered', 'delivered'],
-        ['k-delayed', 'delayed'], ['k-exceptions', 'exceptions'], ['k-delay-rate', 'delayRate'],
-    ] as [$id, $label])
-        <div class="card">
+    @foreach($row1 as [$id, $label, $href])
+        <a href="{{ $href }}" class="{{ $cardCls }}">
             <p class="text-xs font-semibold text-ink-500" data-i18n="{{ $label }}"></p>
             <p id="{{ $id }}" class="mt-1 text-3xl font-bold">&ndash;</p>
-        </div>
+        </a>
     @endforeach
 </div>
 
 <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-4">
-    <div class="card"><p class="text-xs font-semibold text-ink-500" data-i18n="revenue">Revenue received</p><p id="k-paid" class="mt-1 text-2xl font-bold" data-idr="0">&ndash;</p><p id="k-paid-pending" class="text-xs text-ink-500"></p></div>
-    <div class="card"><p class="text-xs font-semibold text-ink-500" data-i18n="excRate">Exception rate</p><p id="k-exc-rate" class="mt-1 text-2xl font-bold">&ndash;</p></div>
-    <div class="card"><p class="text-xs font-semibold text-ink-500" data-i18n="onTime">On-time delivery rate</p><p id="k-ontime" class="mt-1 text-2xl font-bold">&ndash;</p></div>
-    <div class="card"><p class="text-xs font-semibold text-ink-500" data-i18n="avg">Avg</p><p id="k-avg" class="mt-1 text-2xl font-bold">&ndash;</p></div>
+    <a href="{{ $isAdmin ? route('admin.accounting.index') : route('reports.index') }}" class="{{ $cardCls }}"><p class="text-xs font-semibold text-ink-500" data-i18n="revenue">Revenue received</p><p id="k-paid" class="mt-1 text-2xl font-bold" data-idr="0">&ndash;</p><p id="k-paid-pending" class="text-xs text-ink-500"></p></a>
+    <a href="{{ route('shipments.index', ['exception' => 'any']) }}" class="{{ $cardCls }}"><p class="text-xs font-semibold text-ink-500" data-i18n="excRate">Exception rate</p><p id="k-exc-rate" class="mt-1 text-2xl font-bold">&ndash;</p></a>
+    <a href="{{ route('shipments.index', ['status' => 'DELIVERED', 'delayed' => 0]) }}" class="{{ $cardCls }}"><p class="text-xs font-semibold text-ink-500" data-i18n="onTime">On-time delivery rate</p><p id="k-ontime" class="mt-1 text-2xl font-bold">&ndash;</p></a>
+    <a href="{{ route('shipments.index', ['delayed' => 1]) }}" class="{{ $cardCls }}"><p class="text-xs font-semibold text-ink-500" data-i18n="avg">Avg</p><p id="k-avg" class="mt-1 text-2xl font-bold">&ndash;</p></a>
 </div>
 
 <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -50,6 +59,22 @@
     <div class="card">
         <h2 class="mb-3 font-semibold" data-i18n="bySeverity">Delays by severity</h2>
         <div class="relative h-64"><canvas id="chart-severity"></canvas></div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div>
+            <h2 class="font-semibold">Delayed shipments and reasons</h2>
+            <p class="text-xs text-ink-500">The reason comes from the exception reported on the shipment (customs, documents, weather, ...).</p>
+        </div>
+        <a href="{{ route('shipments.index', ['delayed' => 1]) }}" class="text-xs font-semibold text-matcha-700 hover:underline">View all delayed</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-ink-200 text-sm">
+            <thead class="bg-ink-50"><tr><th class="th">Shipment</th><th class="th">Route</th><th class="th">Delay</th><th class="th">Reason</th></tr></thead>
+            <tbody id="delayed-body" class="divide-y divide-ink-100"></tbody>
+        </table>
     </div>
 </div>
 
@@ -88,19 +113,22 @@
     const pct = (v) => (v === null || v === undefined) ? 'n/a' : v + '%';
     const hrs = (v) => (v === null || v === undefined) ? 'n/a' : v + ' h';
 
+    const SHIP_URL = '{{ route('shipments.index') }}';
     const map = CT.baseMap('map', [15, 80], 3);
     const markers = L.layerGroup().addTo(map);
     const overviewLayer = L.layerGroup().addTo(map);   // pin tujuan + garis tipis semua pengiriman
     const routeLayer = L.layerGroup().addTo(map);      // sorotan merah untuk pengiriman yang diklik
 
     const charts = {};
-    function draw(id, type, labels, values, colors) {
+    function draw(id, type, labels, values, colors, hrefFor) {
         if (charts[id]) { charts[id].destroy(); }
         charts[id] = new Chart($(id), {
             type: type,
             data: { labels: labels.map(CT.tx), datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, borderRadius: type === 'bar' ? 6 : 0 }] },
             options: {
                 responsive: true, maintainAspectRatio: false,
+                onClick: (evt, els) => { if (hrefFor && els.length) { window.location.href = hrefFor(labels[els[0].index]); } },
+                onHover: (evt, els) => { evt.native.target.style.cursor = (hrefFor && els.length) ? 'pointer' : 'default'; },
                 plugins: { legend: { display: type === 'doughnut', position: 'bottom', labels: { usePointStyle: true, font: { family: 'Manrope' } } } },
                 scales: type === 'bar' ? { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#EEF0EA' } }, x: { grid: { display: false } } } : {}
             }
@@ -125,12 +153,34 @@
         tb.innerHTML = rows.length ? rows.map((r) => '<tr><td class="td"><a class="font-semibold text-matcha-700 hover:underline" href="' + r.url + '">' + r.number + '</a></td><td class="td">' + r.route + '</td><td class="td">+' + r.predicted_delay_hours + ' h</td><td class="td">' + r.predicted_eta + ' UTC</td><td class="td"><span class="rounded-full px-2 py-0.5 text-xs font-semibold ' + RISK[r.risk] + '">' + CT.tx(r.risk) + '</span></td><td class="td">' + r.confidence + '%</td></tr>').join('')
             : '<tr><td class="td" colspan="6">' + CT.tx('No active shipments to forecast.') + '</td></tr>';
     }
+    function renderDelayed(rows) {
+        const tb = $('delayed-body'); tb.textContent = '';
+        if (!rows.length) {
+            const tr = document.createElement('tr'), td = document.createElement('td');
+            td.className = 'td'; td.colSpan = 4; td.textContent = CT.tx('No delayed shipments.'); tr.appendChild(td); tb.appendChild(tr); return;
+        }
+        const SEV = { HIGH: 'text-red-700', MEDIUM: 'text-sakura-700', LOW: 'text-yellow-700' };
+        rows.forEach((r) => {
+            const tr = document.createElement('tr');
+            const cell = (node) => { const td = document.createElement('td'); td.className = 'td'; td.appendChild(node); tr.appendChild(td); return td; };
+            const a = document.createElement('a'); a.href = r.url; a.textContent = r.number; a.className = 'font-semibold text-matcha-700 hover:underline'; cell(a);
+            const route = document.createElement('span'); route.textContent = r.route; route.setAttribute('data-no-i18n', ''); cell(route);
+            const dl = document.createElement('span'); dl.textContent = '+' + r.delay_hours + ' h · ' + CT.tx(r.severity || ''); dl.className = 'font-semibold ' + (SEV[r.severity] || ''); cell(dl);
+            const why = document.createElement('span');
+            why.textContent = r.reason ? CT.tx(r.reason) : CT.tx('Reason not recorded yet');
+            if (!r.reason) { why.className = 'text-ink-500'; }
+            if (r.detail) { why.title = r.detail; }
+            cell(why);
+            tb.appendChild(tr);
+        });
+    }
     document.addEventListener('ct:country', () => { if (lastData) { render(lastData); } });
     function render(d) {
         lastData = d; routeLayer.clearLayers(); overviewLayer.clearLayers();
         $('k-paid').dataset.idr = d.payments.paid_amount; CT.refreshMoney();
         $('k-paid-pending').textContent = d.payments.pending ? d.payments.pending + ' ' + CT.tx('Pending') : '';
         renderForecast(d.forecast || []);
+        renderDelayed(d.delayed_list || []);
         set('k-shipments', d.totals.shipments);
         set('k-transit', d.totals.in_transit);
         set('k-delivered', d.totals.delivered);
@@ -143,12 +193,12 @@
 
         const palette = { CREATED: '#C5CBBB', BOOKED: '#F0A5BC', PICKED_UP: '#E3B341', IN_TRANSIT: '#86A85D', DELIVERED: '#3F5729', CANCELLED: '#B85C6B' };
         const st = Object.keys(d.by_status);
-        draw('chart-status', 'doughnut', st, st.map((k) => d.by_status[k]), st.map((k) => palette[k] || '#737B69'));
+        draw('chart-status', 'doughnut', st, st.map((k) => d.by_status[k]), st.map((k) => palette[k] || '#737B69'), (k) => SHIP_URL + '?status=' + encodeURIComponent(k));
         const ca = Object.keys(d.by_carrier);
-        draw('chart-carrier', 'bar', ca, ca.map((k) => d.by_carrier[k]), '#678B41');
+        draw('chart-carrier', 'bar', ca, ca.map((k) => d.by_carrier[k]), '#678B41', (k) => SHIP_URL + '?carrier_id=' + encodeURIComponent((d.carrier_ids || {})[k] || ''));
         const sv = Object.keys(d.delay_by_severity);
         const svColor = { LOW: '#E3B341', MEDIUM: '#E67B9C', HIGH: '#B91C1C' };
-        draw('chart-severity', 'bar', sv, sv.map((k) => d.delay_by_severity[k]), sv.map((k) => svColor[k] || '#737B69'));
+        draw('chart-severity', 'bar', sv, sv.map((k) => d.delay_by_severity[k]), sv.map((k) => svColor[k] || '#737B69'), (k) => SHIP_URL + '?delayed=1&severity=' + encodeURIComponent(k));
 
         markers.clearLayers();
         const bounds = [], seenDest = {};

@@ -40,7 +40,7 @@
     // Live cursor coordinates.
     const Pos = L.Control.extend({ options: { position: 'bottomleft' }, onAdd: function () {
       const d = L.DomUtil.create('div'); d.style.cssText = 'background:rgba(255,255,255,.85);padding:2px 8px;border-radius:6px;font:600 11px Manrope,sans-serif;color:#26331A';
-      m.on('mousemove', (e) => { const w = m.wrapLatLng(e.latlng); d.textContent = w.lat.toFixed(4) + ', ' + w.lng.toFixed(4); }); return d; } });
+      let raf = 0; m.on('mousemove', (e) => { if (raf) { return; } const ll = e.latlng; raf = requestAnimationFrame(() => { raf = 0; const w = m.wrapLatLng(ll); d.textContent = w.lat.toFixed(4) + ', ' + w.lng.toFixed(4); }); }); return d; } });
     m.addControl(new Pos());
     m.getContainer().style.cursor = 'grab';
     setTimeout(() => m.invalidateSize(), 300); window.addEventListener('resize', () => m.invalidateSize()); window.addEventListener('load', () => m.invalidateSize()); // fixes grey/stuck map when the container size changes after load

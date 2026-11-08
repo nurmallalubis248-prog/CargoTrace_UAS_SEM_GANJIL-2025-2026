@@ -3,7 +3,7 @@
   const D = {
     en: { dashboard:'Dashboard', shipments:'Shipments', carriers:'Carriers', locations:'Locations', users:'Users', audit:'Audit log',
       notifications:'Notifications', newShipment:'New shipment', logout:'Log out', menu:'Main menu', admin:'Administration',
-      total:'Total shipments', transit:'In transit', delivered:'Delivered', delayed:'Delayed', exceptions:'Open exceptions', delayRate:'Delay rate',
+      total:'Total shipments', transit:'In transit', delivered:'Delivered', delayed:'Delayed', exceptions:'Open exceptions', delayRate:'Delay rate', reports:'Reports',
       excRate:'Exception rate', onTime:'On-time delivery rate', avg:'Avg delay · Avg exception resolution',
       byStatus:'Shipments by status', byCarrier:'Shipments by carrier', bySeverity:'Delays by severity',
       liveMap:'Live shipment map', liveMapSub:'Sea, air and road shipments — latest known position', clock:'Local time', calendar:'Calendar',
@@ -14,7 +14,7 @@
       country:'Country', allCountries:'All countries', language:'Language', revenue:'Revenue received', origin:'Origin', destination:'Destination', loadErr:'Could not load dashboard data. Please refresh the page.', noPos:'No active shipments with a known position.' },
     id: { dashboard:'Dasbor', shipments:'Pengiriman', carriers:'Pengangkut', locations:'Lokasi', users:'Pengguna', audit:'Log audit',
       notifications:'Notifikasi', newShipment:'Pengiriman baru', logout:'Keluar', menu:'Menu utama', admin:'Administrasi',
-      total:'Total pengiriman', transit:'Dalam perjalanan', delivered:'Terkirim', delayed:'Terlambat', exceptions:'Eksepsi terbuka', delayRate:'Tingkat keterlambatan',
+      total:'Total pengiriman', transit:'Dalam perjalanan', delivered:'Terkirim', delayed:'Terlambat', exceptions:'Eksepsi terbuka', delayRate:'Tingkat keterlambatan', reports:'Laporan',
       excRate:'Tingkat eksepsi', onTime:'Tingkat ketepatan waktu', avg:'Rata-rata keterlambatan · Rata-rata penyelesaian eksepsi',
       byStatus:'Pengiriman per status', byCarrier:'Pengiriman per pengangkut', bySeverity:'Keterlambatan per tingkat',
       liveMap:'Peta pengiriman langsung', liveMapSub:'Pengiriman laut, udara, dan darat — posisi terakhir yang diketahui', clock:'Waktu lokal', calendar:'Kalender',
@@ -115,7 +115,10 @@
     if (obs) { obs.disconnect(); }
     walk(document.body);
     if (!obs) {
-      obs = new MutationObserver(() => {
+      obs = new MutationObserver((muts) => {
+        // Map tiles, the cursor-coordinate label and chart canvases change constantly while dragging;
+        // they never need translating, so do not re-scan the whole page for them.
+        if (muts.every((m) => { const t = m.target.nodeType === 1 ? m.target : m.target.parentElement; return t && t.closest && t.closest('.leaflet-container,[data-no-i18n],canvas'); })) { return; }
         if (queued) { return; } queued = true;
         requestAnimationFrame(() => { queued = false; obs.disconnect(); walk(document.body); obs.observe(document.body, OPTS); });
       });
