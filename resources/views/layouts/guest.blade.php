@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title') | CargoTrace</title>
     @include('partials.theme')
-    <script src="{{ asset('js/ct-dict.js') }}"></script>
-    <script src="{{ asset('js/ct-i18n.js') }}"></script>
+    <script src="{{ asset('js/ct-dict.js') }}?v={{ filemtime(public_path('js/ct-dict.js')) }}"></script>
+    <script src="{{ asset('js/ct-i18n.js') }}?v={{ filemtime(public_path('js/ct-i18n.js')) }}"></script>
 </head>
 <body class="min-h-screen bg-white">
 <div class="grid min-h-screen lg:grid-cols-2">

@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     @stack('head')
     <script>window.CT = window.CT || {}; CT.currencies = @json(config('cargotrace.currencies'));</script>
-    <script src="{{ asset('js/ct-dict.js') }}"></script>
-    <script src="{{ asset('js/ct-i18n.js') }}"></script>
+    <script src="{{ asset('js/ct-dict.js') }}?v={{ filemtime(public_path('js/ct-dict.js')) }}"></script>
+    <script src="{{ asset('js/ct-i18n.js') }}?v={{ filemtime(public_path('js/ct-i18n.js')) }}"></script>
 </head>
 <body class="min-h-screen bg-matcha-50 text-ink-800">
 @php
@@ -70,10 +70,10 @@
         <header class="sticky top-0 z-[1000] border-b border-matcha-100 bg-white/85 backdrop-blur">
             <div class="flex flex-wrap items-center gap-3 px-4 py-3 lg:px-8">
                 <a href="{{ route('dashboard') }}" class="text-lg font-extrabold lg:hidden">Cargo<span class="grad-text">Trace</span></a>
-                <div class="ml-auto flex flex-wrap items-center gap-3">
-                    <div class="hidden text-right leading-tight sm:block">
+                <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
+                    <div class="mr-1 hidden text-right leading-tight sm:block">
                         <p id="top-clock" class="text-sm font-extrabold tabular-nums text-matcha-900">--:--:--</p>
-                        <p id="top-date" class="text-[11px] text-ink-500"></p>
+                        <p id="top-date" class="whitespace-nowrap text-[11px] text-ink-500"></p>
                     </div>
                     <select id="country-sel" aria-label="Country" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none" style="max-width:11rem"></select>
                     <select id="cur-sel" aria-label="Currency" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none"></select>
@@ -81,7 +81,7 @@
                     @if($user->isStaff())
                         <a href="{{ route('shipments.create') }}" class="btn-accent !py-1.5"><span data-i18n="newShipment">New shipment</span></a>
                     @endif
-                    <button id="install-btn" type="button" class="btn-light hidden !py-1.5 text-xs">Install app</button>
+                    <button id="install-btn" type="button" class="btn-light hidden whitespace-nowrap !px-3 !py-1.5 text-xs">Install app</button>
                     <form method="POST" action="{{ route('logout') }}" class="lg:hidden">@csrf<button class="btn-light !px-3 !py-1.5 text-xs" data-i18n="logout">Log out</button></form>
                 </div>
             </div>
@@ -97,7 +97,7 @@
                 const tick = () => {
                     const n = new Date();
                     document.getElementById('top-clock').textContent = CT.timeStr(n);
-                    document.getElementById('top-date').textContent = CT.dateStr(n, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + CT.tzLabel();
+                    document.getElementById('top-date').textContent = CT.dateStr(n, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) + ' · ' + CT.tzLabel();
                 };
                 document.addEventListener('ct:country', tick);
                 document.addEventListener('ct:lang', tick);
