@@ -31,6 +31,11 @@ class ReportController extends Controller
         }
 
         $filters = $request->validated();
+        $lang = $filters['lang'] ?? null;
+        unset($filters['lang']);
+        if ($lang !== null) {
+            app()->setLocale($lang);
+        }
         $audit->log($request->user(), 'report.downloaded', $request->user(), ['filters' => $filters]);
 
         return $pdf::loadView('reports.pdf', [

@@ -4,14 +4,14 @@
 @section('content')
 @php
     $s = $report['summary'];
-    $pdfUrl = route('reports.pdf', array_filter($filters, fn ($v) => $v !== null && $v !== ''));
+    $pdfUrl = route('reports.pdf', array_filter(\Illuminate\Support\Arr::except($filters, ['lang']), fn ($v) => $v !== null && $v !== ''));
 @endphp
 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
     <div>
         <h1 class="text-2xl font-extrabold tracking-tight text-matcha-900">Reports</h1>
         <p class="text-sm text-ink-500">Choose filters, check the preview, then download it as a PDF.</p>
     </div>
-    <a href="{{ $pdfUrl }}" class="btn-accent">Download PDF</a>
+    <a id="pdf-btn" href="{{ $pdfUrl }}" class="btn-accent">Download PDF</a>
 </div>
 
 <form method="GET" action="{{ route('reports.index') }}" class="card mb-4 grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -103,3 +103,13 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // The language is chosen in the browser, so tell the server which one the PDF should use.
+    document.getElementById('pdf-btn').addEventListener('click', function () {
+        let l = null; try { l = localStorage.getItem('ct_lang'); } catch (e) {}
+        if (l === 'id' || l === 'en') { const u = new URL(this.href); u.searchParams.set('lang', l); this.href = u.toString(); }
+    });
+</script>
+@endpush

@@ -12,7 +12,7 @@ class TrackingTest extends TestCase
 {
     use RefreshDatabase, BuildsFixtures;
 
-    private function status(string $status, array $extra = []): array
+    private function statusPayload(string $status, array $extra = []): array
     {
         return array_merge(['event_type' => 'STATUS_UPDATE', 'status' => $status], $extra);
     }
@@ -24,7 +24,7 @@ class TrackingTest extends TestCase
         Sanctum::actingAs($operator);
 
         foreach (['BOOKED', 'PICKED_UP', 'IN_TRANSIT'] as $s) {
-            $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status($s))->assertCreated();
+            $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload($s))->assertCreated();
         }
 
         $this->assertSame('IN_TRANSIT', $shipment->fresh()->current_status->value);
@@ -37,7 +37,7 @@ class TrackingTest extends TestCase
         $shipment = $this->makeShipment($this->makeUser(User::ROLE_CUSTOMER), $operator);
         Sanctum::actingAs($operator);
 
-        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status('DELIVERED'))
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('DELIVERED'))
             ->assertStatus(422)
             ->assertJsonPath('errors.rule.0', fn ($m) => str_contains($m, 'Invalid status transition'));
 
@@ -52,12 +52,12 @@ class TrackingTest extends TestCase
         Sanctum::actingAs($operator);
 
         foreach (['BOOKED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED'] as $s) {
-            $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status($s))->assertCreated();
+            $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload($s))->assertCreated();
         }
 
         $this->assertNotNull($shipment->fresh()->actual_arrival_at);
 
-        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status('BOOKED'))->assertStatus(422);
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('BOOKED'))->assertStatus(422);
         $this->postJson("/api/shipments/{$shipment->id}/tracking", ['event_type' => 'CHECKPOINT'])->assertStatus(422);
     }
 
@@ -67,13 +67,13 @@ class TrackingTest extends TestCase
         $shipment = $this->makeShipment($this->makeUser(User::ROLE_CUSTOMER), $operator, [], now()->subDays(2));
         Sanctum::actingAs($operator);
 
-        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status('BOOKED', ['occurred_at' => now()->addDays(2)->format('Y-m-d H:i:s')]))
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('BOOKED', ['occurred_at' => now()->addDays(2)->format('Y-m-d H:i:s')]))
             ->assertStatus(422);
 
-        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status('BOOKED', ['occurred_at' => now()->subHour()->format('Y-m-d H:i:s')]))
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('BOOKED', ['occurred_at' => now()->subHour()->format('Y-m-d H:i:s')]))
             ->assertCreated();
 
-        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status('PICKED_UP', ['occurred_at' => now()->subHours(5)->format('Y-m-d H:i:s')]))
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('PICKED_UP', ['occurred_at' => now()->subHours(5)->format('Y-m-d H:i:s')]))
             ->assertStatus(422);
     }
 
@@ -102,7 +102,7 @@ class TrackingTest extends TestCase
         $shipment = $this->makeShipment($this->makeUser(User::ROLE_CUSTOMER), $operator, [], now()->subDay());
         Sanctum::actingAs($operator);
 
-        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status('BOOKED', ['occurred_at' => now()->subHours(3)->format('Y-m-d H:i:s')]))->assertCreated();
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('BOOKED', ['occurred_at' => now()->subHours(3)->format('Y-m-d H:i:s')]))->assertCreated();
         $this->postJson("/api/shipments/{$shipment->id}/exceptions", [
             'type' => 'CUSTOMS_HOLD', 'severity' => 'HIGH', 'description' => 'Held for inspection.',
         ])->assertCreated();
@@ -126,7 +126,7 @@ class TrackingTest extends TestCase
         $this->postJson("/api/shipments/{$shipment->id}/tracking", ['event_type' => 'EXCEPTION'])->assertStatus(422);
 
         Sanctum::actingAs($customer);
-        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status('BOOKED'))->assertForbidden();
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('BOOKED'))->assertForbidden();
         $this->getJson("/api/shipments/{$shipment->id}/tracking")->assertOk();
     }
 
@@ -137,7 +137,7 @@ class TrackingTest extends TestCase
         $shipment = $this->makeShipment($customer, $operator);
         Sanctum::actingAs($operator);
 
-        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->status('BOOKED'))->assertCreated();
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('BOOKED'))->assertCreated();
 
         $this->assertDatabaseHas('notifications', ['user_id' => $customer->id, 'shipment_id' => $shipment->id, 'type' => 'STATUS_CHANGED']);
     }

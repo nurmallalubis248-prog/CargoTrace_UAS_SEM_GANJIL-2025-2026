@@ -73,6 +73,31 @@ class ReportTest extends TestCase
         $this->assertCount(2, $report['rows']);
     }
 
+    public function test_pdf_view_follows_the_selected_language_and_shows_the_delay_reason(): void
+    {
+        $admin = $this->makeUser(User::ROLE_ADMIN);
+        $operator = $this->makeUser(User::ROLE_OPERATOR);
+        $late = $this->lateShipment($this->makeUser(User::ROLE_CUSTOMER), $operator);
+        app(\App\Services\ExceptionService::class)->open($late, ['type' => 'DOCUMENTATION_ISSUE', 'severity' => 'HIGH', 'description' => 'Packing list missing'], $operator);
+        $data = ['report' => app(ReportService::class)->build($admin, []), 'filters' => [], 'user' => $admin];
+
+        app()->setLocale('id');
+        $id = view('reports.pdf', $data)->render();
+        app()->setLocale('en');
+        $en = view('reports.pdf', $data)->render();
+
+        $this->assertStringContainsString('Laporan pengiriman', $id);
+        $this->assertStringContainsString('Dokumen tidak lengkap', $id);
+        $this->assertStringContainsString('Shipment report', $en);
+        $this->assertStringContainsString('Incomplete documents', $en);
+    }
+
+    public function test_pdf_language_must_be_a_supported_one(): void
+    {
+        $this->actingAs($this->makeUser(User::ROLE_ADMIN))
+            ->get('/reports/pdf?lang=xx')->assertSessionHasErrors('lang');
+    }
+
     public function test_pdf_is_downloadable_when_the_engine_is_installed(): void
     {
         $admin = $this->makeUser(User::ROLE_ADMIN);

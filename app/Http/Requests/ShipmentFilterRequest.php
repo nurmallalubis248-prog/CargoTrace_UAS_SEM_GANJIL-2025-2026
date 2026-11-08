@@ -24,6 +24,7 @@ class ShipmentFilterRequest extends FormRequest
             'severity' => ['nullable', Rule::in(['LOW', 'MEDIUM', 'HIGH'])],
             'delayed' => ['nullable', Rule::in(['0', '1', 'true', 'false'])],
             'exception' => ['nullable', Rule::in(['open', 'any'])],
+            'lang' => ['nullable', Rule::in(['en', 'id'])],   // PDF language only, not a shipment filter
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date'],
             'sort' => ['nullable', Rule::in(\App\Models\Shipment::SORTABLE)],
