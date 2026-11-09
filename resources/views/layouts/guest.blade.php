@@ -8,25 +8,26 @@
     <script src="{{ asset('js/ct-dict.js') }}?v={{ filemtime(public_path('js/ct-dict.js')) }}"></script>
     <script src="{{ asset('js/ct-i18n.js') }}?v={{ filemtime(public_path('js/ct-i18n.js')) }}"></script>
     <style>
-        /* Layar lebar: gambar hero jadi latar, dan form login menempati area pink KOSONG di sisi kanan gambar
-           (tanpa kartu melayang). Area kosong itu mulai di sekitar 62,5% lebar gambar. */
+        /* Layar lebar: gambar hero jadi latar yang diam (fixed), halaman tetap bisa digulir di mana saja.
+           Form login menempati area pink kosong di sisi kanan gambar, tanpa kartu melayang. */
         @media (min-width: 1024px) {
             .login-stage {
-                height: 100vh; overflow: hidden;
-                background: #fdeef4 url('{{ asset('images/login-hero.jpg') }}') no-repeat left center / cover;
+                min-height: 100vh;
+                background: #fdeef4 url('{{ asset('images/login-hero.jpg') }}') no-repeat left center / cover fixed;
             }
             .login-form-col {
-                height: 100%; overflow-y: auto;
                 /* lebar gambar yang tampil = max(lebar layar, tinggi layar x 16/9); form dimulai di 62,5% dari lebar itu */
                 margin-left: min(max(62.5vw, calc(100vh * 1.7778 * 0.625)), calc(100vw - 26rem));
             }
+            .login-inner { padding-top: 2.5rem; padding-bottom: 2.5rem; }
         }
     </style>
 </head>
 <body class="min-h-screen bg-white">
 <div class="login-stage min-h-screen">
-    <section class="login-form-col flex min-h-screen items-center justify-center p-6 sm:p-12 lg:min-h-0 lg:p-10">
-        <div class="w-full max-w-md">
+    <section class="login-form-col flex min-h-screen p-6 sm:p-12 lg:px-10 lg:py-0">
+        {{-- m-auto: berada di tengah kalau muat, dan mulai dari atas (bisa digulir) kalau lebih tinggi dari layar --}}
+        <div class="login-inner m-auto w-full max-w-md">
             <div class="mb-4 flex justify-end">
                 <select data-lang-select aria-label="Language" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none"></select>
             </div>
