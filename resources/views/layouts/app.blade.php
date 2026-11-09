@@ -16,14 +16,22 @@
     .grid > * { min-width: 0; }
     .card { min-width: 0; }
     p[data-idr] { font-size: clamp(1rem, 0.6rem + 1.1vw, 1.5rem); line-height: 1.25; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-    /* Sidebar bergambar: hijau matcha ke pink, pesawat + globe di atas, truk + kapal di bawah */
+    /* Sidebar bergambar (hijau matcha -> pink): globe + pesawat di kanan atas, truk + kapal di dasar sidebar */
     aside.grad-side {
         background:
-            url('{{ asset('images/side-bottom.png') }}') no-repeat bottom center / 100% auto,
-            url('{{ asset('images/side-top.png') }}') no-repeat top right / auto 200px,
-            linear-gradient(180deg, #6A9B42 0%, #70A146 45%, #8FB85C 72%, #F2C4D6 100%) !important;
-        padding-bottom: 5.75rem !important;   /* kotak pengguna/logout tetap di atas gambar truk */
+            url('{{ asset('images/side-top.png') }}') no-repeat top right / 44.6% auto,
+            linear-gradient(180deg, #62923E 0%, #6D9E43 30%, #7EAD51 62%, #8FB85C 84%, #9CBE65 100%) !important;
+        overflow-y: auto;
     }
+    aside.grad-side p.tracking-widest { display: flex; align-items: center; gap: .75rem; color: #E4F0D4; }
+    aside.grad-side p.tracking-widest::after { content: ''; flex: 1; max-width: 5rem; height: 1px; background: rgba(255,255,255,.55); }
+    aside.grad-side .side-link-active {
+        background: linear-gradient(90deg, #ffffff, #fdeef4) !important;
+        color: #E0558B !important;
+        border-radius: 9999px !important;
+        box-shadow: 0 4px 14px rgba(224, 85, 139, .18);
+    }
+    aside.grad-side .side-bottom-art { flex-shrink: 0; display: block; margin: .75rem -1rem -1rem; width: calc(100% + 2rem); max-width: none; pointer-events: none; }
 </style>
 </head>
 <body class="min-h-screen bg-matcha-50 text-ink-800">
@@ -78,6 +86,7 @@
                 <button class="w-full rounded-lg bg-white/90 px-3 py-2 text-xs font-bold text-matcha-800 hover:bg-white" data-i18n="logout">Log out</button>
             </form>
         </div>
+        <img class="side-bottom-art" src="{{ asset('images/side-bottom.png') }}" alt="" aria-hidden="true">
     </aside>
 
     <div class="min-w-0 flex-1">
