@@ -80,7 +80,7 @@ class DeliveryFlowTest extends TestCase
         $this->assertSame('ARRIVED', $shipment->fresh()->current_status->value);
     }
 
-    public function test_customer_confirms_after_paying_and_the_cargo_leaves_the_map(): void
+    public function test_customer_confirms_after_paying_and_the_cargo_stays_on_the_map(): void
     {
         $operator = $this->makeUser(User::ROLE_OPERATOR);
         $admin = $this->makeUser(User::ROLE_ADMIN);
@@ -100,7 +100,7 @@ class DeliveryFlowTest extends TestCase
 
         Sanctum::actingAs($admin);
         $ids = collect($this->getJson('/api/dashboard')->assertOk()->json('positions'))->pluck('id');
-        $this->assertFalse($ids->contains($shipment->id), 'a confirmed delivery leaves the active map');
+        $this->assertTrue($ids->contains($shipment->id), 'a confirmed delivery stays visible on the map');
     }
 
     public function test_only_the_owner_can_confirm_and_operators_cannot_set_delivered(): void
