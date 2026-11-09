@@ -43,7 +43,9 @@ class SimulateShipments extends Command
                 $event = $simulation->advance($shipment, $actor, $step);
                 if ($event) {
                     $moved++;
-                    $this->line(sprintf('%s: %s %s', $shipment->shipment_number, $event->status ?? $event->event_type, $event->location_label));
+                    $status = $event->status ?? $event->event_type;
+                    $status = $status instanceof \BackedEnum ? $status->value : $status;
+                    $this->line(sprintf('%s: %s %s', $shipment->shipment_number, $status, $event->location_label));
                 }
             } catch (BusinessRuleException $e) {
                 $this->warn("{$shipment->shipment_number}: {$e->getMessage()}");
