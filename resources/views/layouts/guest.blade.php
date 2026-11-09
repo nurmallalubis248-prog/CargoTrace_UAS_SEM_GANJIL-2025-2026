@@ -7,30 +7,27 @@
     @include('partials.theme')
     <script src="{{ asset('js/ct-dict.js') }}?v={{ filemtime(public_path('js/ct-dict.js')) }}"></script>
     <script src="{{ asset('js/ct-i18n.js') }}?v={{ filemtime(public_path('js/ct-i18n.js')) }}"></script>
+    <style>
+        /* Layar lebar: gambar hero jadi latar penuh, form di area pink sebelah kanan.
+           Gambar sudah memuat logo, tagline, dan tiga fitur, jadi panel brand lama tidak dipakai lagi. */
+        @media (min-width: 1024px) {
+            .login-stage {
+                background: #fbe9f1 url('{{ asset('images/login-hero.jpg') }}') no-repeat left center / cover;
+            }
+            .login-card {
+                background: rgba(255, 255, 255, .9);
+                backdrop-filter: blur(8px);
+                border-radius: 1.75rem;
+                padding: 2rem 2.25rem;
+                box-shadow: 0 24px 60px rgba(80, 110, 51, .20);
+            }
+        }
+    </style>
 </head>
 <body class="min-h-screen bg-white">
-<div class="grid min-h-screen lg:grid-cols-2">
-    {{-- Brand panel: matcha -> pink gradient --}}
-    <section class="grad-brand relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div class="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10"></div>
-        <div class="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-white/10"></div>
-        <div class="relative flex items-center gap-3">
-            <span class="grid h-12 w-12 place-items-center rounded-2xl bg-white text-lg font-extrabold text-matcha-800 shadow-lg">CT</span>
-            <span class="text-2xl font-extrabold tracking-tight">CargoTrace</span>
-        </div>
-        <div class="relative">
-            <h1 class="max-w-md text-4xl font-extrabold leading-tight" data-i18n="tagline">Global shipment visibility &amp; tracking</h1>
-            <ul class="mt-8 space-y-4 text-matcha-50">
-                @foreach(['f1','f2','f3'] as $f)
-                    <li class="flex items-center gap-3"><span class="grid h-7 w-7 place-items-center rounded-full bg-white/25 text-sm">✓</span><span data-i18n="{{ $f }}"></span></li>
-                @endforeach
-            </ul>
-        </div>
-        <p class="relative text-xs text-white/80">© CargoTrace · Web Programming 2 UAS</p>
-    </section>
-
-    <section class="flex items-center justify-center p-6 sm:p-12">
-        <div class="w-full max-w-md">
+<div class="login-stage min-h-screen lg:flex lg:items-center lg:justify-end">
+    <section class="flex items-center justify-center p-6 sm:p-12 lg:w-[46%] lg:p-10 xl:pr-24">
+        <div class="login-card w-full max-w-md">
             <div class="mb-4 flex justify-end">
                 <select data-lang-select aria-label="Language" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none"></select>
             </div>
@@ -41,6 +38,7 @@
                 </div>
             @endif
             @yield('content')
+            <p class="mt-6 text-center text-xs text-ink-500">© CargoTrace · Web Programming 2 UAS</p>
         </div>
     </section>
 </div>
