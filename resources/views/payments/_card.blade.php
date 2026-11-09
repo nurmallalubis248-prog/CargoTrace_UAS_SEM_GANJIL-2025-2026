@@ -5,6 +5,7 @@
     $fmt = fn ($v) => 'Rp '.number_format($v, 0, ',', '.');
     $isOwner = (int) auth()->id() === (int) $shipment->customer_id;
     $arrived = $shipment->current_status->value === 'ARRIVED';
+    $payable = $shipment->current_status->isPayable();
     $delivered = $shipment->current_status->value === 'DELIVERED';
     $confirmedAt = $delivered ? $shipment->trackingEvents()->where('status', 'DELIVERED')->orderByDesc('occurred_at')->first()?->occurred_at : null;
 @endphp
@@ -31,30 +32,32 @@
                 </div>
                 @if($arrived && ! $isOwner)<p class="mt-2 text-xs text-ink-500">Waiting for the customer to confirm receipt.</p>@endif
                 @if($delivered && $confirmedAt)<p class="mt-2 text-xs text-matcha-800"><span>Receipt confirmed</span> &middot; {{ $confirmedAt->format('Y-m-d H:i') }} UTC</p>@endif
-            @elseif($arrived)
+            @elseif($payable)
                 @if($last)
                     <p class="mb-2 text-xs text-ink-500">Last attempt: <b>{{ $last->status }}</b>
                         @if($last->status === 'PENDING')
                             &middot; <a class="text-sakura-600 underline" href="{{ route('payments.sync', $last) }}">refresh status</a>
-                            @if($last->redirect_url)&middot; <a class="text-sakura-600 underline" href="{{ $last->redirect_url }}">continue paying</a>@endif
                         @endif
                     </p>
                 @endif
                 @if($isOwner)
-                    <form method="POST" action="{{ route('shipments.pay', $shipment) }}">@csrf
-                        <button class="grad-brand rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow hover:opacity-90">Pay now</button>
-                    </form>
+                    <button type="button" id="pay-btn" data-url="{{ route('shipments.pay', $shipment) }}"
+                        class="grad-brand rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow hover:opacity-90">Pay now</button>
+                    <p id="pay-error" class="mt-2 hidden text-xs text-red-700"></p>
                 @else
                     <p class="text-xs text-ink-500">Waiting for the customer to pay.</p>
                 @endif
             @elseif($delivered)
                 <span class="rounded-full bg-matcha-600 px-3 py-1 text-sm font-bold text-white">DELIVERED</span>
             @else
-                <p class="text-sm text-ink-500">The invoice opens when the cargo arrives.</p>
+                <p class="text-sm text-ink-500">This shipment can no longer be paid.</p>
             @endif
         </div>
     </div>
-    @if($arrived && ! $paid && $isOwner)
-        <p class="mt-3 rounded-lg bg-sakura-50 px-3 py-2 text-sm text-sakura-700">Cargo arrived. Please pay the freight, then confirm that you received it.</p>
+    @if($payable && ! $paid && $isOwner)
+        <p class="mt-3 rounded-lg bg-sakura-50 px-3 py-2 text-sm text-sakura-700">
+            @if($arrived)Cargo arrived. Please pay the freight, then confirm that you received it.
+            @else You can pay the freight now. Once the cargo arrives, confirm that you received it.@endif
+        </p>
     @endif
 </div>

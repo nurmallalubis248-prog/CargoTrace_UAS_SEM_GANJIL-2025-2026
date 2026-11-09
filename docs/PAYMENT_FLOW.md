@@ -17,7 +17,7 @@ CANCELLED is only reachable from CREATED / BOOKED. DELIVERED and CANCELLED are t
 |---|---|---|---|
 | IN_TRANSIT | operator / carrier / simulator | valid transition | marker moves for customer and admin |
 | ARRIVED | operator / simulator | from IN_TRANSIT only | `actual_arrival_at` = arrival time (delay is computed from it), customer notified |
-| Pay | customer | only while ARRIVED; once | Midtrans Snap: QRIS, BCA/BNI/BRI/Permata/CIMB VA, Mandiri bill, e-wallet, card |
+| Pay | customer | any active status (CREATED ... ARRIVED), not after DELIVERED/CANCELLED; once | Midtrans Snap shown as an **in-app popup** (`snap.pay`, no redirect to midtrans.com): QRIS, BCA/BNI/BRI/Permata/CIMB VA, Mandiri bill, e-wallet, card |
 | PAID | Midtrans webhook (signature checked) or "refresh status" | idempotent, a paid payment is never downgraded | admins get `PAYMENT_RECEIVED`, customer gets `PAYMENT_CONFIRMED`, ERP webhook, payout status = PENDING_SETTLEMENT |
 | DELIVERED | customer ("Confirm received"); admin may do it for the customer | needs ARRIVED **and** a PAID payment | admins get `DELIVERY_CONFIRMED`, marker removed from the active map |
 | Settled | admin ("Mark settled") | only PAID payments | `payout_status = SETTLED`, `settled_at`, audit log |

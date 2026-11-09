@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Enums\ShipmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Shipment;
@@ -26,17 +25,40 @@ class PaymentController extends Controller
         return (int) max(config('cargotrace.payment.min_fee'), round($s->weight_kg * config('cargotrace.payment.rate_per_kg')));
     }
 
-    public function store(Request $request, Shipment $shipment): RedirectResponse
+    /**
+     * Starts (or resumes) a payment and returns the Snap token as JSON.
+     * The browser opens the Midtrans popup (snap.pay) INSIDE the app, so the customer never leaves CargoTrace.
+     */
+    public function store(Request $request, Shipment $shipment): JsonResponse
     {
         Gate::authorize('view', $shipment);
 
         if ($shipment->payments()->where('status', 'PAID')->exists()) {
-            return back()->with('error', 'This shipment is already paid.');
+            return response()->json(['message' => 'This shipment is already paid.'], 422);
         }
 
-        if ($shipment->current_status !== ShipmentStatus::ARRIVED) {
-            return back()->with('error', 'Payment opens when the cargo has arrived.');
+        if (! $shipment->current_status->isPayable()) {
+            return response()->json(['message' => 'This shipment can no longer be paid ('.$shipment->current_status->value.').'], 422);
         }
+
+        // Refresh still-open attempts first (prevents double payment).
+        foreach ($shipment->payments()->where('status', 'PENDING')->latest('id')->get() as $open) {
+            $remote = $this->midtrans->fetchStatus($open);
+            if ($remote) {
+                $this->midtrans->apply($open, $remote);
+            }
+        }
+        if ($shipment->payments()->where('status', 'PAID')->exists()) {
+            return response()->json(['paid' => true]);
+        }
+
+        // Reuse a still-valid Snap token instead of creating a new order on every click.
+        $reusable = $shipment->payments()->where('status', 'PENDING')->whereNotNull('snap_token')
+            ->where('created_at', '>', now()->subHours(23))->latest('id')->first();
+        if ($reusable) {
+            return response()->json(['token' => $reusable->snap_token, 'payment_id' => $reusable->id]);
+        }
+        $shipment->payments()->where('status', 'PENDING')->update(['status' => 'EXPIRED']);
 
         $payment = $shipment->payments()->create([
             'user_id' => $request->user()->id,
@@ -51,12 +73,25 @@ class PaymentController extends Controller
             Log::warning('Midtrans snap failed: '.$e->getMessage());
             $payment->delete();
 
-            return back()->with('error', 'Payment could not be started: '.$e->getMessage());
+            return response()->json(['message' => 'Payment could not be started: '.$e->getMessage()], 422);
         }
 
         $payment->update(['snap_token' => $snap['token'], 'redirect_url' => $snap['redirect_url'] ?? null]);
 
-        return redirect()->away($payment->redirect_url);
+        return response()->json(['token' => $payment->snap_token, 'payment_id' => $payment->id]);
+    }
+
+    /** Status check for the in-app popup (pulls the latest status from Midtrans, then returns it as JSON). */
+    public function status(Payment $payment): JsonResponse
+    {
+        Gate::authorize('view', $payment->shipment);
+
+        $remote = $this->midtrans->fetchStatus($payment);
+        if ($remote) {
+            $this->midtrans->apply($payment, $remote);
+        }
+
+        return response()->json(['status' => $payment->fresh()->status]);
     }
 
     /** Called when the customer returns from Snap (and by the "refresh" button). */

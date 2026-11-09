@@ -84,7 +84,8 @@ class PaymentTest extends TestCase
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
         $shipment = $this->arrivedShipment($customer, $operator, ['weight_kg' => 1000]);
 
-        $this->actingAs($customer)->post("/shipments/{$shipment->id}/pay")->assertRedirect('https://pay.test/abc');
+        $this->actingAs($customer)->postJson("/shipments/{$shipment->id}/pay")
+            ->assertOk()->assertJson(['token' => 'snap-token']);
 
         $this->assertDatabaseHas('payments', [
             'shipment_id' => $shipment->id, 'user_id' => $customer->id,
@@ -109,15 +110,31 @@ class PaymentTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_payment_is_not_available_before_the_cargo_has_arrived(): void
+    public function test_payment_is_available_before_the_cargo_has_arrived(): void
     {
-        Http::fake();
+        Http::fake(['app.sandbox.midtrans.com/*' => Http::response(['token' => 'snap-token', 'redirect_url' => 'https://pay.test/abc'], 201)]);
         $operator = $this->makeUser(User::ROLE_OPERATOR);
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
         $shipment = $this->makeShipment($customer, $operator);
 
-        $this->actingAs($customer)->post("/shipments/{$shipment->id}/pay")
-            ->assertSessionHas('error', 'Payment opens when the cargo has arrived.');
+        $this->actingAs($customer)->postJson("/shipments/{$shipment->id}/pay")
+            ->assertOk()->assertJson(['token' => 'snap-token']);
+
+        $this->assertDatabaseHas('payments', ['shipment_id' => $shipment->id, 'status' => 'PENDING']);
+    }
+
+    public function test_payment_is_not_available_for_cancelled_or_delivered_shipments(): void
+    {
+        Http::fake();
+        $operator = $this->makeUser(User::ROLE_OPERATOR);
+        $customer = $this->makeUser(User::ROLE_CUSTOMER);
+
+        foreach (['CANCELLED', 'DELIVERED'] as $status) {
+            $shipment = $this->makeShipment($customer, $operator);
+            $shipment->forceFill(['current_status' => $status])->save();
+
+            $this->actingAs($customer)->postJson("/shipments/{$shipment->id}/pay")->assertStatus(422);
+        }
 
         $this->assertDatabaseCount('payments', 0);
         Http::assertNothingSent();
@@ -141,8 +158,8 @@ class PaymentTest extends TestCase
         $shipment = $this->makeShipment($customer, $operator);
         $this->makePayment($shipment, $customer, 'PAID');
 
-        $this->actingAs($customer)->post("/shipments/{$shipment->id}/pay")
-            ->assertSessionHas('error', 'This shipment is already paid.');
+        $this->actingAs($customer)->postJson("/shipments/{$shipment->id}/pay")
+            ->assertStatus(422)->assertJson(['message' => 'This shipment is already paid.']);
 
         $this->assertDatabaseCount('payments', 1);
         Http::assertNothingSent();
@@ -155,8 +172,8 @@ class PaymentTest extends TestCase
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
         $shipment = $this->arrivedShipment($customer, $operator);
 
-        $this->actingAs($customer)->post("/shipments/{$shipment->id}/pay")
-            ->assertSessionHas('error');
+        $this->actingAs($customer)->postJson("/shipments/{$shipment->id}/pay")
+            ->assertStatus(422)->assertJsonStructure(['message']);
 
         $this->assertDatabaseCount('payments', 0);
     }
@@ -169,7 +186,7 @@ class PaymentTest extends TestCase
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
         $shipment = $this->arrivedShipment($customer, $operator);
 
-        $this->actingAs($customer)->post("/shipments/{$shipment->id}/pay")->assertSessionHas('error');
+        $this->actingAs($customer)->postJson("/shipments/{$shipment->id}/pay")->assertStatus(422)->assertJsonStructure(['message']);
 
         $this->assertDatabaseCount('payments', 0);
         Http::assertNothingSent();

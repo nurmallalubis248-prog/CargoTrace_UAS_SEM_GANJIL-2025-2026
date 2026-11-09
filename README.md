@@ -39,7 +39,8 @@ Shipment information is scattered, customers cannot see the latest status, delay
 - **Audit log** (actor, action, time, entity) and in-app **notifications**. The sidebar badge refreshes every 15 s; admins are notified when a payment is received and when the customer confirms receipt, customers when their cargo arrives and when their payment is confirmed.
 
 ### Payments (Midtrans Snap, sandbox)
-- Freight fee = weight x `CARGOTRACE_RATE_PER_KG` (default Rp 5.000), at least `CARGOTRACE_MIN_FEE` (default Rp 50.000). **Payment opens when the cargo has arrived** (status `ARRIVED`).
+- Payment opens as a Snap popup inside the app (the customer stays on CargoTrace; requires `MIDTRANS_CLIENT_KEY`).
+- Freight fee = weight x `CARGOTRACE_RATE_PER_KG` (default Rp 5.000), at least `CARGOTRACE_MIN_FEE` (default Rp 50.000). **Payment is open at any active status** (not after `DELIVERED` or `CANCELLED`); confirming receipt still needs `ARRIVED` + a PAID payment.
 - QRIS, e-wallets, virtual accounts and cards through Midtrans Snap. Payment status can be refreshed manually (works on localhost) or updated by the signed webhook `POST /midtrans/notification` (SHA-512 signature verified, CSRF-exempt).
 - After `PAID`: the customer can **download a PDF receipt** and press **Confirm received**; admins get an instant notification and the payment enters the ledger as `PENDING_SETTLEMENT`.
 - Optional push of a `payment.paid` event to an external ERP (`ERP_WEBHOOK_URL`); it never breaks the payment flow.

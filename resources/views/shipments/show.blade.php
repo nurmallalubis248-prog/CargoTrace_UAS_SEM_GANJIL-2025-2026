@@ -214,6 +214,39 @@
 @endsection
 
 @push('scripts')
+@if((int) auth()->id() === (int) $shipment->customer_id && $shipment->current_status->isPayable() && ! $shipment->payments->contains('status', 'PAID'))
+<script src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com' : 'https://app.sandbox.midtrans.com' }}/snap/snap.js"
+        data-client-key="{{ config('services.midtrans.client_key') }}"></script>
+<script>
+// In-app payment: Midtrans Snap opens as a popup on THIS page (no redirect to midtrans.com).
+(function () {
+    const btn = document.getElementById('pay-btn');
+    if (!btn) { return; }
+    const err = document.getElementById('pay-error');
+    const csrf = document.querySelector('meta[name=csrf-token]').content;
+    const show = (m) => { err.textContent = m; err.classList.remove('hidden'); btn.disabled = false; };
+    const finish = (paymentId) => fetch('/payments/' + paymentId + '/status', { headers: { 'Accept': 'application/json' } })
+        .finally(() => location.reload());
+
+    btn.addEventListener('click', async () => {
+        btn.disabled = true; err.classList.add('hidden');
+        try {
+            const r = await fetch(btn.dataset.url, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
+            const d = await r.json();
+            if (d.paid) { return location.reload(); }
+            if (!r.ok) { return show(d.message || 'Payment could not be started.'); }
+            if (!window.snap) { return show('Midtrans popup failed to load. Check MIDTRANS_CLIENT_KEY in .env.'); }
+            window.snap.pay(d.token, {
+                onSuccess: () => finish(d.payment_id),
+                onPending: () => finish(d.payment_id),
+                onError: () => show('Payment failed. Please try again.'),
+                onClose: () => { btn.disabled = false; }
+            });
+        } catch (e) { show('Network error. Please try again.'); }
+    });
+})();
+</script>
+@endif
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="{{ asset('js/ct-map.js') }}?v={{ filemtime(public_path('js/ct-map.js')) }}"></script>
 <script src="{{ asset('js/ct-live.js') }}?v={{ filemtime(public_path('js/ct-live.js')) }}"></script>

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Payment;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -44,6 +45,15 @@ class MidtransService
             throw new RuntimeException('MIDTRANS_SERVER_KEY is not set in .env.');
         }
 
+        // Safety: sandbox keys start with "SB-". Refuse a mismatch so real money is never charged by accident.
+        $isSandboxKey = str_starts_with((string) $this->cfg('server_key'), 'SB-');
+        if ($this->cfg('is_production') && $isSandboxKey) {
+            throw new RuntimeException('MIDTRANS_IS_PRODUCTION=true but the server key is a SANDBOX key (starts with SB-).');
+        }
+        if (! $this->cfg('is_production') && ! $isSandboxKey) {
+            throw new RuntimeException('MIDTRANS_IS_PRODUCTION=false but the server key is a PRODUCTION key (no SB- prefix).');
+        }
+
         $res = Http::withBasicAuth($this->cfg('server_key'), '')->acceptJson()->timeout(15)
             ->post($this->snapUrl(), [
                 'transaction_details' => ['order_id' => $payment->order_id, 'gross_amount' => $payment->amount],
@@ -65,6 +75,10 @@ class MidtransService
     {
         $res = Http::withBasicAuth($this->cfg('server_key'), '')->acceptJson()->timeout(15)
             ->get($this->apiUrl().'/'.$payment->order_id.'/status');
+
+        if (! $res->successful()) {
+            Log::warning('Midtrans status check failed ('.$res->status().') for '.$payment->order_id.': '.$res->body());
+        }
 
         return $res->successful() ? $res->json() : null;
     }
@@ -92,6 +106,15 @@ class MidtransService
             return $payment; // never downgrade a paid payment
         }
 
+        // A second settlement for the same shipment is a duplicate payment: keep it out of revenue, flag it for refund.
+        if ($status === 'PAID' && Payment::where('shipment_id', $payment->shipment_id)
+            ->where('status', 'PAID')->where('id', '!=', $payment->id)->exists()) {
+            Log::warning('Duplicate settlement for shipment '.$payment->shipment_id.' (order '.$payment->order_id.'): refund it in the Midtrans dashboard.');
+            $payment->forceFill(['status' => 'DUPLICATE', 'payment_type' => $n['payment_type'] ?? $payment->payment_type, 'raw_notification' => $n])->save();
+
+            return $payment;
+        }
+
         $payment->forceFill([
             'status' => $status,
             'payment_type' => $n['payment_type'] ?? $payment->payment_type,
@@ -116,7 +139,8 @@ class MidtransService
         }
         $amount = 'Rp '.number_format($payment->amount, 0, ',', '.');
         $this->notifications->notifyAdmins('PAYMENT_RECEIVED', "Payment {$amount} received for shipment {$shipment->shipment_number} ({$payment->payment_type}).", $shipment);
-        $this->notifications->notifyUser($shipment->customer_id, $shipment, 'PAYMENT_CONFIRMED', "Payment received for {$shipment->shipment_number}. You can now confirm receipt.");
+        $tail = $shipment->current_status === \App\Enums\ShipmentStatus::ARRIVED ? ' You can now confirm receipt.' : ' You can confirm receipt once the cargo arrives.';
+        $this->notifications->notifyUser($shipment->customer_id, $shipment, 'PAYMENT_CONFIRMED', "Payment received for {$shipment->shipment_number}.".$tail);
     }
 
     /** Push a "payment.paid" event to the external ERP (optional, ERP_WEBHOOK_URL). Never breaks the payment flow. */

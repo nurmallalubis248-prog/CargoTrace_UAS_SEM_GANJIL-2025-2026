@@ -37,6 +37,12 @@ enum ShipmentStatus: string
         return in_array($next, $this->allowedNext(), true);
     }
 
+    /** The freight can be paid at any active stage (not after DELIVERED / CANCELLED). Confirming receipt still needs ARRIVED + PAID. */
+    public function isPayable(): bool
+    {
+        return in_array($this, [self::CREATED, self::BOOKED, self::PICKED_UP, self::IN_TRANSIT, self::ARRIVED], true);
+    }
+
     public function isTerminal(): bool
     {
         return $this->allowedNext() === [];
