@@ -45,4 +45,11 @@ return [
         'LIQUID' => 'Liquid / tanker',
         'HAZARDOUS' => 'Hazardous',
     ],
+
+    // Demo mode: a scheduled job moves active shipments along their route by writing real tracking events.
+    // Production deployments receive positions from carriers/drivers via POST /api/shipments/{id}/tracking instead.
+    'simulation' => [
+        'enabled' => env('CARGOTRACE_SIMULATION', false),
+        'step_percent' => (int) env('CARGOTRACE_SIMULATION_STEP', 10),
+    ],
 ];

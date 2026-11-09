@@ -1,8 +1,11 @@
 -- CargoTrace - database schema (MySQL / MariaDB, XAMPP)
 -- Equivalent to the Laravel migrations in database/migrations/.
 -- Usage: select database `cargotrace` in phpMyAdmin, then Import this file.
--- This file creates ALL tables AND fills them with the demo accounts and sample shipments.
--- Do NOT run "php artisan migrate" or "db:seed" after importing this file.
+-- This ONE file creates ALL tables (users, carriers + transport mode, locations, warehouses, shipments, tracking, exceptions,
+-- payments with payout/settlement status, notifications, audit logs) AND fills them with demo accounts and sample data.
+-- Lifecycle supported: CREATED > BOOKED > PICKED_UP > IN_TRANSIT > ARRIVED > DELIVERED (status columns are VARCHAR, no enum to change).
+-- It replaces the old patch files (update_xampp_phpmyadmin.sql, update_arrived_payout.sql): import ONLY this file.
+-- Do NOT run "php artisan migrate" or "db:seed" after importing this file (use one way or the other, never both).
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -11,12 +14,14 @@ CREATE DATABASE IF NOT EXISTS `cargotrace` CHARACTER SET utf8mb4 COLLATE utf8mb4
 USE `cargotrace`;
 
 -- Remove old CargoTrace tables first so the import never fails with 'table already exists'.
+DROP TABLE IF EXISTS `payments`;
 DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `shipment_exceptions`;
 DROP TABLE IF EXISTS `tracking_events`;
 DROP TABLE IF EXISTS `shipment_items`;
 DROP TABLE IF EXISTS `shipments`;
+DROP TABLE IF EXISTS `warehouses`;
 DROP TABLE IF EXISTS `locations`;
 DROP TABLE IF EXISTS `carriers`;
 DROP TABLE IF EXISTS `personal_access_tokens`;
@@ -68,6 +73,7 @@ CREATE TABLE `carriers` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
   `code` VARCHAR(10) NOT NULL,
+  `transport_mode` VARCHAR(10) NOT NULL DEFAULT 'SEA',   -- SEA | AIR | ROAD (ROAD shipments get real-road routes on the map)
   `contact_email` VARCHAR(255) NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL,
@@ -91,6 +97,22 @@ CREATE TABLE `locations` (
   UNIQUE KEY `locations_code_unique` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------------------------------------------------------------- warehouses
+CREATE TABLE `warehouses` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NOT NULL,
+  `code` VARCHAR(12) NOT NULL,
+  `location_id` BIGINT UNSIGNED NULL,
+  `capacity_kg` INT UNSIGNED NOT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NULL,
+  `updated_at` TIMESTAMP NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `warehouses_code_unique` (`code`),
+  KEY `warehouses_location_id_foreign` (`location_id`),
+  CONSTRAINT `warehouses_location_id_foreign` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------------------------------------------------------------- shipments
 CREATE TABLE `shipments` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -100,6 +122,7 @@ CREATE TABLE `shipments` (
   `carrier_id` BIGINT UNSIGNED NOT NULL,
   `origin_id` BIGINT UNSIGNED NOT NULL,
   `destination_id` BIGINT UNSIGNED NOT NULL,
+  `warehouse_id` BIGINT UNSIGNED NULL,
   `created_by` BIGINT UNSIGNED NOT NULL,
   `cargo_type` VARCHAR(30) NOT NULL,
   `weight_kg` DECIMAL(12,2) NOT NULL,
@@ -125,10 +148,12 @@ CREATE TABLE `shipments` (
   KEY `shipments_expected_arrival_at_index` (`expected_arrival_at`),
   KEY `shipments_current_status_index` (`current_status`),
   KEY `shipments_is_delayed_index` (`is_delayed`),
+  KEY `shipments_warehouse_id_foreign` (`warehouse_id`),
   CONSTRAINT `shipments_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `shipments_carrier_id_foreign` FOREIGN KEY (`carrier_id`) REFERENCES `carriers` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `shipments_origin_id_foreign` FOREIGN KEY (`origin_id`) REFERENCES `locations` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `shipments_destination_id_foreign` FOREIGN KEY (`destination_id`) REFERENCES `locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `shipments_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `shipments_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -189,6 +214,31 @@ CREATE TABLE `shipment_exceptions` (
   KEY `shipment_exceptions_reported_by_foreign` (`reported_by`),
   CONSTRAINT `shipment_exceptions_shipment_id_foreign` FOREIGN KEY (`shipment_id`) REFERENCES `shipments` (`id`) ON DELETE CASCADE,
   CONSTRAINT `shipment_exceptions_reported_by_foreign` FOREIGN KEY (`reported_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------- payments (Midtrans) + payout status
+CREATE TABLE `payments` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `shipment_id` BIGINT UNSIGNED NOT NULL,
+  `user_id` BIGINT UNSIGNED NOT NULL,
+  `order_id` VARCHAR(60) NOT NULL,
+  `amount` BIGINT UNSIGNED NOT NULL,                                   -- IDR
+  `status` VARCHAR(15) NOT NULL DEFAULT 'PENDING',                     -- PENDING | PAID | FAILED | EXPIRED | CANCELLED
+  `payout_status` VARCHAR(20) NOT NULL DEFAULT 'PENDING_SETTLEMENT',   -- PENDING_SETTLEMENT | SETTLED (money reached the bank account)
+  `payment_type` VARCHAR(30) NULL,                                     -- qris, bca_va, bni_va, bri_va, ...
+  `snap_token` VARCHAR(255) NULL,
+  `redirect_url` TEXT NULL,
+  `raw_notification` JSON NULL,
+  `paid_at` DATETIME NULL,
+  `settled_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL,
+  `updated_at` TIMESTAMP NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `payments_order_id_unique` (`order_id`),
+  KEY `payments_status_index` (`status`),
+  KEY `payments_payout_status_index` (`payout_status`),
+  CONSTRAINT `payments_shipment_id_foreign` FOREIGN KEY (`shipment_id`) REFERENCES `shipments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `payments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------- notifications & audit
@@ -264,6 +314,13 @@ INSERT INTO `locations` (`id`, `name`, `code`, `country`, `type`, `latitude`, `l
   (15, 'Port of New York & New Jersey', 'USNYC', 'US', 'PORT', 40.69, -74.15, 1, @now, @now);
 
 -- shipments
+-- warehouses (location_id is looked up by code; NULL when that location is not in this demo data set)
+INSERT INTO `warehouses` (`id`, `name`, `code`, `location_id`, `capacity_kg`, `is_active`, `created_at`, `updated_at`) VALUES
+  (1, 'Jakarta Distribution Hub', 'JKT-WH', (SELECT `id` FROM `locations` WHERE `code` = 'IDJKT' LIMIT 1), 60000, 1, @now, @now),
+  (2, 'Surabaya Warehouse',       'SUB-WH', (SELECT `id` FROM `locations` WHERE `code` = 'IDSUB' LIMIT 1), 40000, 1, @now, @now),
+  (3, 'Medan Warehouse',          'MES-WH', (SELECT `id` FROM `locations` WHERE `code` = 'IDMES' LIMIT 1), 30000, 1, @now, @now),
+  (4, 'Bandung Warehouse',        'BDO-WH', (SELECT `id` FROM `locations` WHERE `code` = 'IDBDO' LIMIT 1), 25000, 1, @now, @now);
+
 INSERT INTO `shipments` (`id`, `shipment_number`, `reference_number`, `customer_id`, `carrier_id`, `origin_id`, `destination_id`, `created_by`, `cargo_type`, `weight_kg`, `volume_cbm`, `expected_departure_at`, `expected_arrival_at`, `estimated_arrival_at`, `actual_arrival_at`, `current_status`, `current_latitude`, `current_longitude`, `current_location_label`, `last_event_at`, `is_delayed`, `delay_hours`, `delay_severity`, `deleted_at`, `created_at`, `updated_at`) VALUES
   (1, 'CT261102-K7Q2M', 'PO-48213', 3, 1, 1, 2, 2, 'CONTAINER_FCL', 18500.0, NULL, DATE_ADD(@now, INTERVAL -1209600 SECOND), DATE_ADD(@now, INTERVAL 1382400 SECOND), DATE_ADD(@now, INTERVAL 1382400 SECOND), NULL, 'IN_TRANSIT', 12.5, 45.0, 'Gulf of Aden', DATE_ADD(@now, INTERVAL -398400 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -1468800 SECOND), DATE_ADD(@now, INTERVAL -398400 SECOND)),
   (2, 'CT261102-R4XD9', 'PO-73901', 4, 2, 1, 2, 2, 'REFRIGERATED', 12200.0, NULL, DATE_ADD(@now, INTERVAL -1728000 SECOND), DATE_ADD(@now, INTERVAL 691200 SECOND), DATE_ADD(@now, INTERVAL 835200 SECOND), NULL, 'IN_TRANSIT', 31.26, 32.31, 'Port Said approach', DATE_ADD(@now, INTERVAL -427500 SECOND), 1, 40.0, 'HIGH', NULL, DATE_ADD(@now, INTERVAL -1987200 SECOND), DATE_ADD(@now, INTERVAL -427500 SECOND)),
@@ -276,6 +333,11 @@ INSERT INTO `shipments` (`id`, `shipment_number`, `reference_number`, `customer_
   (9, 'CT261102-B1TXR', 'PO-57236', 3, 2, 3, 4, 2, 'LIQUID', 21000.0, NULL, DATE_ADD(@now, INTERVAL 777600 SECOND), DATE_ADD(@now, INTERVAL 2160000 SECOND), DATE_ADD(@now, INTERVAL 2160000 SECOND), NULL, 'CREATED', 31.35, 121.6, 'Port of Shanghai', DATE_ADD(@now, INTERVAL -21600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -21600 SECOND), DATE_ADD(@now, INTERVAL -21600 SECOND));
 
 -- shipment_items
+-- payments for the two DELIVERED demo shipments (amount = weight_kg x Rp 5.000/kg): paid after arrival, then confirmed by the customer
+INSERT INTO `payments` (`id`, `shipment_id`, `user_id`, `order_id`, `amount`, `status`, `payout_status`, `payment_type`, `paid_at`, `settled_at`, `created_at`, `updated_at`) VALUES
+  (1, 6, 4, 'CT-6-DEMO-001', 155000000, 'PAID', 'SETTLED',            'bca_va', DATE_ADD(@now, INTERVAL -1558800 SECOND), DATE_ADD(@now, INTERVAL -1386000 SECOND), DATE_ADD(@now, INTERVAL -1558800 SECOND), DATE_ADD(@now, INTERVAL -1386000 SECOND)),
+  (2, 7, 3, 'CT-7-DEMO-001',  44000000, 'PAID', 'PENDING_SETTLEMENT', 'qris',   DATE_ADD(@now, INTERVAL -2577600 SECOND), NULL,                                       DATE_ADD(@now, INTERVAL -2577600 SECOND), DATE_ADD(@now, INTERVAL -2577600 SECOND));
+
 INSERT INTO `shipment_items` (`id`, `shipment_id`, `description`, `quantity`, `weight_kg`, `volume_cbm`, `created_at`, `updated_at`) VALUES
   (1, 1, 'Container fcl consignment', 1, 18500.0, NULL, DATE_ADD(@now, INTERVAL -1468800 SECOND), DATE_ADD(@now, INTERVAL -1468800 SECOND)),
   (2, 2, 'Refrigerated consignment', 1, 12200.0, NULL, DATE_ADD(@now, INTERVAL -1987200 SECOND), DATE_ADD(@now, INTERVAL -1987200 SECOND)),

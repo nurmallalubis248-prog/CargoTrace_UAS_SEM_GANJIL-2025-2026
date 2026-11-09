@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\ExceptionStatus;
+use App\Http\Controllers\Web\PaymentController;
 use App\Models\Carrier;
 use App\Models\Location;
 use App\Models\Shipment;
@@ -227,7 +228,12 @@ class DatabaseSeeder extends Seeder
             }
 
             if ($d['progress'] === 'delivered') {
-                $status('DELIVERED', $end, 'Cargo delivered to consignee.', $dest);
+                $status('ARRIVED', $end, 'Cargo arrived at the destination terminal.', $dest);
+                $confirmAt = $end->copy()->addHours(3);
+                if ($confirmAt->gt($now)) {
+                    $confirmAt = $now->copy();
+                }
+                $this->payAndConfirm($shipment, $customers[$d['cust']], $end, $confirmAt);
             }
         }
 
@@ -242,5 +248,32 @@ class DatabaseSeeder extends Seeder
                 $exceptions->update($exception, ['status' => 'RESOLVED', 'resolution_notes' => 'Handled with carrier and customer.'], $op, $at->copy()->addHours(8));
             }
         }
+    }
+
+    /** Demo data for a completed delivery: the customer paid (demo transaction) and confirmed receipt. */
+    private function payAndConfirm(Shipment $shipment, User $customer, Carbon $arrivedAt, Carbon $confirmAt): void
+    {
+        $payment = $shipment->payments()->create([
+            'user_id' => $customer->id,
+            'order_id' => 'CT-'.$shipment->id.'-DEMO-'.random_int(100, 999),
+            'amount' => PaymentController::amountFor($shipment),
+            'status' => 'PAID',
+            'payment_type' => ['qris', 'bca_va', 'bni_va', 'bri_va'][random_int(0, 3)],
+        ]);
+        $paidAt = $arrivedAt->copy()->addHour();
+        if ($paidAt->gt($confirmAt)) {
+            $paidAt = $confirmAt->copy();
+        }
+        $settled = random_int(0, 1) === 1;
+        $payment->forceFill([
+            'paid_at' => $paidAt,
+            'payout_status' => $settled ? 'SETTLED' : 'PENDING_SETTLEMENT',
+            'settled_at' => $settled ? $paidAt->copy()->addDays(2)->min(now()) : null,
+        ])->save();
+
+        app(TrackingService::class)->addEvent($shipment, [
+            'event_type' => 'STATUS_UPDATE', 'status' => 'DELIVERED', 'occurred_at' => $confirmAt->format('Y-m-d H:i:s'),
+            'location_id' => $shipment->destination_id, 'description' => 'Receipt confirmed by the customer (demo data).',
+        ], $customer);
     }
 }

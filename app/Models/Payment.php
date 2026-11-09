@@ -11,7 +11,7 @@ class Payment extends Model
 
     protected function casts(): array
     {
-        return ['raw_notification' => 'array', 'paid_at' => 'datetime'];
+        return ['raw_notification' => 'array', 'paid_at' => 'datetime', 'settled_at' => 'datetime'];
     }
 
     public function shipment(): BelongsTo

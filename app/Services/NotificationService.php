@@ -28,4 +28,26 @@ class NotificationService
             ]);
         }
     }
+
+    /** In-app notification for every admin (optionally except the person who triggered the action). */
+    public function notifyAdmins(string $type, string $message, ?Shipment $shipment = null, ?User $except = null): void
+    {
+        User::query()
+            ->where('role', User::ROLE_ADMIN)
+            ->when($except, fn ($q) => $q->where('id', '!=', $except->id))
+            ->each(fn (User $admin) => AppNotification::create([
+                'user_id' => $admin->id,
+                'shipment_id' => $shipment?->id,
+                'type' => $type,
+                'message' => $message,
+            ]));
+    }
+
+    public function notifyUser(?int $userId, ?Shipment $shipment, string $type, string $message): void
+    {
+        if (! $userId) {
+            return;
+        }
+        AppNotification::create(['user_id' => $userId, 'shipment_id' => $shipment?->id, 'type' => $type, 'message' => $message]);
+    }
 }

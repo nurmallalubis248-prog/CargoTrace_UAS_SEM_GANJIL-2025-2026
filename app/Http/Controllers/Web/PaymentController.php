@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Enums\ShipmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Shipment;
 use App\Services\MidtransService;
+use App\Support\PdfLang;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class PaymentController extends Controller
@@ -29,6 +32,10 @@ class PaymentController extends Controller
 
         if ($shipment->payments()->where('status', 'PAID')->exists()) {
             return back()->with('error', 'This shipment is already paid.');
+        }
+
+        if ($shipment->current_status !== ShipmentStatus::ARRIVED) {
+            return back()->with('error', 'Payment opens when the cargo has arrived.');
         }
 
         $payment = $shipment->payments()->create([
@@ -82,5 +89,22 @@ class PaymentController extends Controller
         $this->midtrans->apply($payment, $n);
 
         return response()->json(['message' => 'OK']);
+    }
+
+    /** Payment receipt (PDF). Only for PAID payments, only for people who may view the shipment. */
+    public function receipt(Request $request, Payment $payment): Response
+    {
+        Gate::authorize('view', $payment->shipment);
+        abort_unless($payment->isPaid(), 404);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::class;
+        if (! class_exists($pdf)) {
+            return back()->with('error', 'The PDF engine is not installed yet. Run: composer require barryvdh/laravel-dompdf');
+        }
+        PdfLang::apply($request);
+
+        return $pdf::loadView('payments.receipt', [
+            'payment' => $payment->loadMissing('shipment.customer', 'shipment.origin', 'shipment.destination', 'shipment.carrier'),
+        ])->setPaper('a4', 'portrait')->download('receipt-'.$payment->order_id.'.pdf');
     }
 }

@@ -49,7 +49,7 @@ class EtaService
         }
 
         $expected = $shipment->expected_arrival_at;
-        $delivered = $shipment->current_status === ShipmentStatus::DELIVERED && $shipment->actual_arrival_at;
+        $delivered = in_array($shipment->current_status, [ShipmentStatus::ARRIVED, ShipmentStatus::DELIVERED], true) && $shipment->actual_arrival_at;
         $compared = $delivered ? $shipment->actual_arrival_at : ($shipment->estimated_arrival_at ?? $expected);
         $label = $delivered ? 'Actual arrival' : 'Estimated arrival (ETA)';
 

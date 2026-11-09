@@ -48,17 +48,35 @@ class TrackingTest extends TestCase
     public function test_delivered_shipment_is_terminal(): void
     {
         $operator = $this->makeUser(User::ROLE_OPERATOR);
-        $shipment = $this->makeShipment($this->makeUser(User::ROLE_CUSTOMER), $operator);
+        $admin = $this->makeUser(User::ROLE_ADMIN);
+        $customer = $this->makeUser(User::ROLE_CUSTOMER);
+        $shipment = $this->makeShipment($customer, $operator);
         Sanctum::actingAs($operator);
 
-        foreach (['BOOKED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED'] as $s) {
+        foreach (['BOOKED', 'PICKED_UP', 'IN_TRANSIT', 'ARRIVED'] as $s) {
             $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload($s))->assertCreated();
         }
+        $this->assertNotNull($shipment->fresh()->actual_arrival_at); // recorded when the cargo ARRIVED
 
-        $this->assertNotNull($shipment->fresh()->actual_arrival_at);
+        $shipment->payments()->create(['user_id' => $customer->id, 'order_id' => 'CT-TRK-'.uniqid(), 'amount' => 100000, 'status' => 'PAID']);
+        Sanctum::actingAs($admin);
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('DELIVERED'))->assertCreated();
 
         $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('BOOKED'))->assertStatus(422);
         $this->postJson("/api/shipments/{$shipment->id}/tracking", ['event_type' => 'CHECKPOINT'])->assertStatus(422);
+    }
+
+    public function test_cargo_cannot_skip_the_arrival_step(): void
+    {
+        $operator = $this->makeUser(User::ROLE_OPERATOR);
+        $shipment = $this->makeShipment($this->makeUser(User::ROLE_CUSTOMER), $operator);
+        Sanctum::actingAs($operator);
+
+        foreach (['BOOKED', 'PICKED_UP', 'IN_TRANSIT'] as $s) {
+            $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload($s))->assertCreated();
+        }
+        $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('DELIVERED'))->assertStatus(422);
+        $this->assertSame('IN_TRANSIT', $shipment->fresh()->current_status->value);
     }
 
     public function test_event_time_must_not_be_in_the_future_or_before_latest_event(): void

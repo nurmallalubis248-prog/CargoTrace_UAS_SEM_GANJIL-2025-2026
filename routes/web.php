@@ -42,15 +42,19 @@ Route::middleware('auth')->group(function () {
     Route::post('shipments/{shipment}/exceptions', [ExceptionController::class, 'store'])->name('shipments.exceptions.store');
     Route::patch('exceptions/{exception}', [ExceptionController::class, 'update'])->name('exceptions.update');
     Route::get('shipments/{shipment}/weather', [ExternalApiController::class, 'weather'])->name('shipments.weather');
+    Route::get('shipments/{shipment}/live', [ShipmentController::class, 'live'])->name('shipments.live');
 
     Route::post('shipments/{shipment}/pay', [PaymentController::class, 'store'])->middleware('throttle:10,1')->name('shipments.pay');
     Route::get('payments/{payment}/sync', [PaymentController::class, 'sync'])->name('payments.sync');
+    Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
+    Route::post('shipments/{shipment}/confirm', [ShipmentController::class, 'confirm'])->name('shipments.confirm');
 
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/pdf', [ReportController::class, 'pdf'])->middleware('throttle:10,1')->name('reports.pdf');
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::get('notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
 
     Route::middleware('role:admin,operator')->group(function () {
         Route::get('geocode', [ExternalApiController::class, 'geocode'])->middleware('throttle:20,1')->name('geocode');
@@ -75,6 +79,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('accounting', [AccountingController::class, 'index'])->name('accounting.index');
         Route::get('accounting/export', [AccountingController::class, 'export'])->name('accounting.export');
+        Route::get('accounting/pdf', [AccountingController::class, 'pdf'])->middleware('throttle:10,1')->name('accounting.pdf');
+        Route::post('accounting/{payment}/settle', [AccountingController::class, 'settle'])->name('accounting.settle');
 
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit.index');
     });

@@ -33,6 +33,17 @@ return [
         'truncated' => 'Only the first :n shipments are listed.', 'empty' => 'No shipments match these filters.',
         'page' => 'Page',
     ],
+    'receipt' => [
+        'title' => 'Payment receipt', 'number' => 'Receipt no.', 'order' => 'Order ID', 'shipment' => 'Shipment', 'customer' => 'Customer',
+        'route' => 'Route', 'carrier' => 'Carrier', 'weight' => 'Weight', 'method' => 'Payment method', 'paid_at' => 'Paid at',
+        'status' => 'Status', 'paid' => 'PAID', 'amount' => 'Total paid', 'note' => 'This receipt was generated electronically by CargoTrace and is valid without a signature.',
+    ],
+    'finance' => [
+        'title' => 'Financial report', 'generated' => 'Generated', 'period' => 'Paid between', 'all' => 'all', 'received' => 'Revenue received',
+        'pending' => 'Pending settlement', 'settled' => 'Settled', 'count' => 'Transactions', 'by_method' => 'Revenue by payment method',
+        'method' => 'Method', 'order' => 'Order ID', 'shipment' => 'Shipment', 'customer' => 'Customer', 'amount' => 'Amount', 'paid_at' => 'Paid at',
+        'payout' => 'Payout', 'empty' => 'No paid transactions match these filters.', 'truncated' => 'Only the first :n transactions are listed.',
+    ],
     'roles' => ['admin' => 'Administrator', 'operator' => 'Logistics Operator', 'customer' => 'Customer'],
     'common' => [
         'fix_following' => 'Please fix the following:',

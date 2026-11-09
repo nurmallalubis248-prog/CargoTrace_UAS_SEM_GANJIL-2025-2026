@@ -9,10 +9,14 @@ use App\Http\Requests\UpdateShipmentRequest;
 use App\Models\Carrier;
 use App\Models\Location;
 use App\Models\Shipment;
+use App\Models\TrackingEvent;
 use App\Models\User;
 use App\Services\EtaService;
 use App\Services\ShipmentService;
+use App\Services\TrackingService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -72,6 +76,7 @@ class ShipmentController extends Controller
             'number' => $shipment->shipment_number,
             'delayed' => (bool) $shipment->is_delayed,
             'done' => $shipment->current_status->value === 'DELIVERED',
+            'arrived' => $shipment->current_status->value === 'ARRIVED',
             'last_ts' => $shipment->last_event_at ? $shipment->last_event_at->getTimestamp() * 1000 : null,
             'eta_ts' => ($shipment->estimated_arrival_at ?? $shipment->expected_arrival_at)?->getTimestamp() * 1000 ?: null,
             'origin' => ['name' => $shipment->origin->name, 'lat' => $shipment->origin->latitude, 'lng' => $shipment->origin->longitude],
@@ -95,6 +100,38 @@ class ShipmentController extends Controller
             'mapData' => $mapData,
             'locations' => Location::where('is_active', true)->orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    /** Tiny status probe the shipment page polls so customers see new tracking events without reloading. */
+    public function live(Shipment $shipment): JsonResponse
+    {
+        Gate::authorize('view', $shipment);
+
+        return response()->json([
+            'status' => $shipment->current_status->value,
+            'events' => $shipment->trackingEvents()->count(),
+            'last_event_at' => $shipment->last_event_at?->getTimestamp(),
+            'delayed' => (bool) $shipment->is_delayed,
+            'done' => $shipment->current_status->isTerminal(),
+        ]);
+    }
+
+    /**
+     * "Confirm received": only the shipment's customer, only after ARRIVED and a PAID payment.
+     * The rules live in TrackingService (a violation redirects back with an error message).
+     */
+    public function confirm(Request $request, Shipment $shipment, TrackingService $tracking): RedirectResponse
+    {
+        abort_unless((int) $request->user()->id === (int) $shipment->customer_id, 403);
+
+        $tracking->addEvent($shipment, [
+            'event_type' => TrackingEvent::TYPE_STATUS_UPDATE,
+            'status' => 'DELIVERED',
+            'location_id' => $shipment->destination_id,
+            'description' => 'Receipt confirmed by the customer.',
+        ], $request->user());
+
+        return redirect()->route('shipments.show', $shipment)->with('success', 'Thank you! Delivery confirmed.');
     }
 
     public function edit(Shipment $shipment): View

@@ -13,6 +13,10 @@ use RuntimeException;
  */
 class MidtransService
 {
+    public function __construct(private NotificationService $notifications)
+    {
+    }
+
     private function cfg(string $k)
     {
         return config('services.midtrans.'.$k);
@@ -96,10 +100,23 @@ class MidtransService
         ])->save();
 
         if ($status === 'PAID') {
+            $this->notifyPaid($payment);
             $this->notifyErp($payment);
         }
 
         return $payment;
+    }
+
+    /** Real-time (in-app) notice for the admins, and tell the customer that confirming receipt is now possible. */
+    private function notifyPaid(Payment $payment): void
+    {
+        $shipment = $payment->shipment;
+        if (! $shipment) {
+            return;
+        }
+        $amount = 'Rp '.number_format($payment->amount, 0, ',', '.');
+        $this->notifications->notifyAdmins('PAYMENT_RECEIVED', "Payment {$amount} received for shipment {$shipment->shipment_number} ({$payment->payment_type}).", $shipment);
+        $this->notifications->notifyUser($shipment->customer_id, $shipment, 'PAYMENT_CONFIRMED', "Payment received for {$shipment->shipment_number}. You can now confirm receipt.");
     }
 
     /** Push a "payment.paid" event to the external ERP (optional, ERP_WEBHOOK_URL). Never breaks the payment flow. */

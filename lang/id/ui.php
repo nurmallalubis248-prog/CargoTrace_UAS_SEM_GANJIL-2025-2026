@@ -33,6 +33,17 @@ return [
         'truncated' => 'Hanya :n pengiriman pertama yang ditampilkan.', 'empty' => 'Tidak ada pengiriman yang cocok dengan filter ini.',
         'page' => 'Halaman',
     ],
+    'receipt' => [
+        'title' => 'Resi pembayaran', 'number' => 'No. resi', 'order' => 'ID pesanan', 'shipment' => 'Pengiriman', 'customer' => 'Pelanggan',
+        'route' => 'Rute', 'carrier' => 'Pengangkut', 'weight' => 'Berat', 'method' => 'Metode pembayaran', 'paid_at' => 'Dibayar pada',
+        'status' => 'Status', 'paid' => 'LUNAS', 'amount' => 'Total dibayar', 'note' => 'Resi ini dibuat secara elektronik oleh CargoTrace dan sah tanpa tanda tangan.',
+    ],
+    'finance' => [
+        'title' => 'Laporan keuangan', 'generated' => 'Dibuat', 'period' => 'Dibayar antara', 'all' => 'semua', 'received' => 'Pendapatan diterima',
+        'pending' => 'Menunggu pencairan', 'settled' => 'Sudah dicairkan', 'count' => 'Transaksi', 'by_method' => 'Pendapatan per metode pembayaran',
+        'method' => 'Metode', 'order' => 'ID pesanan', 'shipment' => 'Pengiriman', 'customer' => 'Pelanggan', 'amount' => 'Jumlah', 'paid_at' => 'Dibayar pada',
+        'payout' => 'Pencairan', 'empty' => 'Tidak ada transaksi lunas yang cocok dengan filter ini.', 'truncated' => 'Hanya :n transaksi pertama yang ditampilkan.',
+    ],
     'roles' => ['admin' => 'Administrator', 'operator' => 'Operator Logistik', 'customer' => 'Pelanggan'],
     'common' => [
         'fix_following' => 'Mohon perbaiki hal berikut:',

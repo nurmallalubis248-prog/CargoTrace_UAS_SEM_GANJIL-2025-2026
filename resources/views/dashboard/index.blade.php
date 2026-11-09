@@ -201,7 +201,7 @@
         set('k-ontime', pct(d.rates.on_time_delivery_rate_pct));
         set('k-avg', hrs(d.rates.avg_delay_hours) + ' · ' + hrs(d.rates.avg_exception_resolution_hours));
 
-        const palette = { CREATED: '#C5CBBB', BOOKED: '#F0A5BC', PICKED_UP: '#E3B341', IN_TRANSIT: '#86A85D', DELIVERED: '#3F5729', CANCELLED: '#B85C6B' };
+        const palette = { CREATED: '#C5CBBB', BOOKED: '#F0A5BC', PICKED_UP: '#E3B341', IN_TRANSIT: '#86A85D', ARRIVED: '#4F9DDE', DELIVERED: '#3F5729', CANCELLED: '#B85C6B' };
         const st = Object.keys(d.by_status);
         draw('chart-status', 'doughnut', st, st.map((k) => d.by_status[k]), st.map((k) => palette[k] || '#737B69'), (k) => SHIP_URL + '?status=' + encodeURIComponent(k));
         const ca = Object.keys(d.by_carrier);
@@ -222,7 +222,7 @@
             staticMk[p.id] = m;
             if (dest) {
                 specs[p.id] = { from: (p.origin_lat != null && p.origin_lng != null) ? [Number(p.origin_lat), Number(p.origin_lng)] : ll, here: ll, dest: dest,
-                    mode: p.mode, delayed: p.delayed, done: false, lastAt: p.last_ts, eta: p.eta_ts, popup: popup(p) };
+                    mode: p.mode, delayed: p.delayed, done: false, arrived: p.status === 'ARRIVED', lastAt: p.last_ts, eta: p.eta_ts, popup: popup(p) };
                 m.on('click', () => startLive(p.id, true));
             }
             markers.addLayer(m);

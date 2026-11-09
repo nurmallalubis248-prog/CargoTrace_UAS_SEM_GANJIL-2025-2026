@@ -60,6 +60,7 @@ class DashboardService
         $positions = $base()
             ->whereIn('current_status', [
                 ShipmentStatus::BOOKED->value, ShipmentStatus::PICKED_UP->value, ShipmentStatus::IN_TRANSIT->value,
+                ShipmentStatus::ARRIVED->value,   // arrived but not yet paid + confirmed: stays on the map
             ])
             ->whereNotNull('current_latitude')
             ->orderByDesc('last_event_at')

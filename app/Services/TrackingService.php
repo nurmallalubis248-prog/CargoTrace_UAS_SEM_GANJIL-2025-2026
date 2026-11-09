@@ -64,6 +64,16 @@ class TrackingService
                 }
             }
 
+            if ($newStatus === ShipmentStatus::DELIVERED) {
+                // Delivery = the customer confirmed receipt (an admin may do it on their behalf), and only after paying.
+                if ((int) $actor->id !== (int) $shipment->customer_id && ! $actor->isAdmin()) {
+                    throw new BusinessRuleException('Only the customer (or an admin) can confirm receipt of the cargo.');
+                }
+                if (! $shipment->payments()->where('status', 'PAID')->exists()) {
+                    throw new BusinessRuleException('Receipt can only be confirmed after the freight payment is PAID.');
+                }
+            }
+
             // Resolve coordinates: explicit lat/lng > chosen location.
             $latitude = $data['latitude'] ?? null;
             $longitude = $data['longitude'] ?? null;
@@ -94,8 +104,11 @@ class TrackingService
             // Update the shipment snapshot.
             if ($newStatus) {
                 $shipment->current_status = $newStatus;
+                if ($newStatus === ShipmentStatus::ARRIVED) {
+                    $shipment->actual_arrival_at = $occurredAt;      // arrival time drives the delay, not the confirmation time
+                }
                 if ($newStatus === ShipmentStatus::DELIVERED) {
-                    $shipment->actual_arrival_at = $occurredAt;
+                    $shipment->actual_arrival_at ??= $occurredAt;
                 }
             }
             if ($latitude !== null && $longitude !== null) {
@@ -112,10 +125,16 @@ class TrackingService
             $becameDelayed = $this->eta->refresh($shipment);
 
             if ($newStatus) {
-                $this->notifications->notifyShipmentParties(
-                    $shipment, 'STATUS_CHANGED',
-                    "Shipment {$shipment->shipment_number} is now {$newStatus->value}.", $actor
-                );
+                $no = $shipment->shipment_number;
+                $message = match ($newStatus) {
+                    ShipmentStatus::ARRIVED => "Shipment {$no} has arrived. Please pay the freight, then confirm receipt.",
+                    ShipmentStatus::DELIVERED => "Shipment {$no} is DELIVERED: receipt was confirmed.",
+                    default => "Shipment {$no} is now {$newStatus->value}.",
+                };
+                $this->notifications->notifyShipmentParties($shipment, 'STATUS_CHANGED', $message, $actor);
+                if ($newStatus === ShipmentStatus::DELIVERED) {
+                    $this->notifications->notifyAdmins('DELIVERY_CONFIRMED', "Shipment {$no} was confirmed as received by the customer.", $shipment, $actor);
+                }
             }
             if ($becameDelayed) {
                 $this->notifications->notifyShipmentParties(

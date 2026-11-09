@@ -29,6 +29,14 @@ class PaymentTest extends TestCase
         ]);
     }
 
+    private function arrivedShipment(User $customer, User $operator, array $override = []): Shipment
+    {
+        $shipment = $this->makeShipment($customer, $operator, $override);
+        $shipment->forceFill(['current_status' => 'ARRIVED'])->save();
+
+        return $shipment->fresh();
+    }
+
     private function makePayment(Shipment $shipment, User $user, string $status = 'PENDING'): Payment
     {
         return $shipment->payments()->create([
@@ -74,7 +82,7 @@ class PaymentTest extends TestCase
         Http::fake(['app.sandbox.midtrans.com/*' => Http::response(['token' => 'snap-token', 'redirect_url' => 'https://pay.test/abc'], 201)]);
         $operator = $this->makeUser(User::ROLE_OPERATOR);
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
-        $shipment = $this->makeShipment($customer, $operator, ['weight_kg' => 1000]);
+        $shipment = $this->arrivedShipment($customer, $operator, ['weight_kg' => 1000]);
 
         $this->actingAs($customer)->post("/shipments/{$shipment->id}/pay")->assertRedirect('https://pay.test/abc');
 
@@ -97,6 +105,20 @@ class PaymentTest extends TestCase
         $status = $this->actingAs($alice)->post("/shipments/{$theirs->id}/pay")->getStatusCode();
 
         $this->assertContains($status, [403, 404]);
+        $this->assertDatabaseCount('payments', 0);
+        Http::assertNothingSent();
+    }
+
+    public function test_payment_is_not_available_before_the_cargo_has_arrived(): void
+    {
+        Http::fake();
+        $operator = $this->makeUser(User::ROLE_OPERATOR);
+        $customer = $this->makeUser(User::ROLE_CUSTOMER);
+        $shipment = $this->makeShipment($customer, $operator);
+
+        $this->actingAs($customer)->post("/shipments/{$shipment->id}/pay")
+            ->assertSessionHas('error', 'Payment opens when the cargo has arrived.');
+
         $this->assertDatabaseCount('payments', 0);
         Http::assertNothingSent();
     }
@@ -131,7 +153,7 @@ class PaymentTest extends TestCase
         Http::fake(['app.sandbox.midtrans.com/*' => Http::response(['error_messages' => ['Access denied']], 401)]);
         $operator = $this->makeUser(User::ROLE_OPERATOR);
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
-        $shipment = $this->makeShipment($customer, $operator);
+        $shipment = $this->arrivedShipment($customer, $operator);
 
         $this->actingAs($customer)->post("/shipments/{$shipment->id}/pay")
             ->assertSessionHas('error');
@@ -145,7 +167,7 @@ class PaymentTest extends TestCase
         Http::fake();
         $operator = $this->makeUser(User::ROLE_OPERATOR);
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
-        $shipment = $this->makeShipment($customer, $operator);
+        $shipment = $this->arrivedShipment($customer, $operator);
 
         $this->actingAs($customer)->post("/shipments/{$shipment->id}/pay")->assertSessionHas('error');
 

@@ -170,7 +170,7 @@
                             <div id="status-box">
                                 <label class="label">New status</label>
                                 <select class="input" name="status">
-                                    @foreach($shipment->current_status->allowedNext() as $n)<option value="{{ $n->value }}">{{ $n->value }}</option>@endforeach
+                                    @foreach($shipment->current_status->allowedNext() as $n)@continue($n->value === 'DELIVERED' && ! auth()->user()->isAdmin())<option value="{{ $n->value }}">{{ $n->value }}</option>@endforeach
                                 </select>
                             </div>
                             <div id="eta-box" class="hidden">
@@ -254,9 +254,24 @@
     const here = path[path.length - 1], dest = [data.destination.lat, data.destination.lng];
     const routes = L.layerGroup().addTo(map);
     // Real-road route (ROAD), great-circle (SEA/AIR), travelled trail, and a vehicle that keeps moving toward the ETA.
-    CT.liveRoute(map, routes, { from: path[0], here: here, dest: dest, mode: data.mode, delayed: data.delayed, done: data.done,
+    CT.liveRoute(map, routes, { from: path[0], here: (data.done || data.arrived) ? dest : here, dest: dest, mode: data.mode, delayed: data.delayed, done: data.done, arrived: data.arrived,
         lastAt: data.last_ts, eta: data.eta_ts, popup: popup([data.number, CT.modeLabel(data.mode)]), fit: false });
     map.fitBounds(bounds, { padding: [40, 40] });
+
+    // Live updates: when an operator (or the demo simulator) records a new event, reload so status, timeline and map are current.
+    if (!data.done) {
+        let seen = null;
+        const probe = () => fetch('{{ route('shipments.live', $shipment) }}', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => {
+                if (!d) { return; }
+                const key = d.events + '|' + d.status;
+                const typing = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+                if (seen !== null && key !== seen && !typing) { window.location.reload(); }
+                seen = key;
+            }).catch(() => {});
+        probe(); setInterval(probe, 15000);
+    }
 
     // Weather (external API; failures are shown, never thrown)
     const w = document.getElementById('weather');

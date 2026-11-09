@@ -42,7 +42,7 @@
                 <a href="{{ route($r) }}" class="side-link {{ request()->routeIs($pattern) && !request()->routeIs('shipments.create') ? 'side-link-active' : '' }}">
                     <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $ic[$icon] }}"/></svg>
                     <span {!! in_array($key, ['warehouses', 'accounting']) ? '' : 'data-i18n="'.$key.'"' !!}>{{ ucfirst($key) }}</span>
-                    @if($key === 'notifications' && $unread > 0)<span class="ml-auto rounded-full bg-sakura-400 px-2 py-0.5 text-xs font-bold text-white">{{ $unread }}</span>@endif
+                    @if($key === 'notifications' && $unread > 0)<span data-unread class="ml-auto rounded-full bg-sakura-400 px-2 py-0.5 text-xs font-bold text-white">{{ $unread }}</span>@endif
                 </a>
             @endforeach
         </nav>
@@ -129,6 +129,41 @@
 </footer>
 </div>
 </div>
+<script>
+(function () {
+    // PDF links/forms carry the browser language (the server cannot know it).
+    document.addEventListener('click', (e) => {
+        const a = e.target.closest ? e.target.closest('a[data-pdf-lang]') : null; if (!a) { return; }
+        let l = null; try { l = localStorage.getItem('ct_lang'); } catch (x) { /* ignore */ }
+        if (l === 'id' || l === 'en') { const u = new URL(a.href, location.href); u.searchParams.set('lang', l); a.href = u.toString(); }
+    }, true);
+
+    // Live notifications: poll the unread counter and flash the badge when something new arrives (payment, arrival, confirmation...).
+    const link = document.querySelector('a[href$="/notifications"]'); if (!link) { return; }
+    let last = {{ (int) ($unread ?? 0) }};
+    const badge = () => {
+        let b = link.querySelector('[data-unread]');
+        if (!b) { b = document.createElement('span'); b.setAttribute('data-unread', ''); b.className = 'ml-auto rounded-full bg-sakura-400 px-2 py-0.5 text-xs font-bold text-white'; link.appendChild(b); }
+        return b;
+    };
+    const toast = () => {
+        const t = document.createElement('div');
+        t.className = 'fixed bottom-4 right-4 z-50 rounded-xl border border-matcha-200 bg-white px-4 py-3 text-sm font-semibold text-matcha-900 shadow-lg';
+        t.textContent = (window.CT && CT.tx) ? CT.tx('New notification') : 'New notification';
+        document.body.appendChild(t); setTimeout(() => t.remove(), 5000);
+    };
+    setInterval(() => {
+        if (document.hidden) { return; }
+        fetch('{{ route('notifications.unread') }}', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => {
+                if (!d) { return; }
+                if (d.unread > last) { toast(); }
+                last = d.unread; const b = badge(); b.textContent = d.unread; b.classList.toggle('hidden', d.unread === 0);
+            }).catch(() => {});
+    }, 15000);
+})();
+</script>
 @stack('scripts')
 </body>
 </html>

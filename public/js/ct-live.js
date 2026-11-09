@@ -119,14 +119,15 @@
         simNow += (ts - prev) * ctrl.speed; prev = ts; lastDraw = ts;
         let p = p0;
         if (s.eta && s.eta > lastAt) { p = p0 + (1 - p0) * Math.min(1, Math.max(0, (simNow - lastAt) / (s.eta - lastAt))); }
-        if (!s.done) { p = Math.max(p0, Math.min(p, 0.995)); }
+        if (s.arrived) { p = 1; } else if (!s.done) { p = Math.max(p0, Math.min(p, 0.995)); }
         const cur = at(pts, cum, p * total);
         veh.setLatLng(cur.p); ctrl.pos = cur.p;
         moved.setLatLngs([pts[i0]].concat(pts.slice(i0 + 1, cur.i + 1), [cur.p]));
         const b = CT.bearing(cur.p, pts[Math.min(pts.length - 1, cur.i + 3)]), el = veh.getElement(), sp = el && el.querySelector('span');
         if (sp) { sp.style.transform = s.mode === 'AIR' ? 'rotate(' + b + 'deg)' : 'scaleX(' + (b > 180 ? -1 : 1) + ')'; }
         const km = Math.max(0, (1 - p) * total / 1000);
-        const txt = (s.done ? CT.tx('Delivered') : CT.tx('In transit')) + ' \u00b7 ' + (km >= 10 ? Math.round(km) : km.toFixed(1)) + ' km ' + CT.tx('remaining') + (res.real ? '' : ' (' + CT.tx('estimate') + ')');
+        const txt = s.arrived ? CT.tx('Arrived') + ' \u00b7 ' + CT.tx('waiting for payment')
+            : (s.done ? CT.tx('Delivered') : CT.tx('In transit')) + ' \u00b7 ' + (km >= 10 ? Math.round(km) : km.toFixed(1)) + ' km ' + CT.tx('remaining') + (res.real ? '' : ' (' + CT.tx('estimate') + ')');
         if (txt !== lastTxt) { veh.setTooltipContent(txt); lastTxt = txt; }
       };
       ctl.raf = requestAnimationFrame(frame);

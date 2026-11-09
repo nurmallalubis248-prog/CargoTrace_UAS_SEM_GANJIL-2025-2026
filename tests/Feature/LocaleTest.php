@@ -22,7 +22,7 @@ class LocaleTest extends TestCase
 
     public function test_pdf_translation_groups_have_the_same_keys_in_english_and_indonesian(): void
     {
-        foreach (['exception_types', 'reports'] as $group) {
+        foreach (['exception_types', 'reports', 'receipt', 'finance'] as $group) {
             $en = array_keys(trans('ui.'.$group, [], 'en'));
             $id = array_keys(trans('ui.'.$group, [], 'id'));
             sort($en);
