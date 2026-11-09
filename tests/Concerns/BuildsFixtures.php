@@ -19,6 +19,7 @@ trait BuildsFixtures
             'password' => 'password',
         ]);
         $user->role = $role;
+        $user->email_verified_at = now();
         $user->save();
 
         return $user;

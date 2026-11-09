@@ -38,6 +38,9 @@ Shipment information is scattered, customers cannot see the latest status, delay
 - **Accounting:** payment ledger, revenue / pending / failed totals, monthly revenue, **payout (settlement) status** (`PENDING_SETTLEMENT` / `SETTLED`, admin button "Mark settled"), **CSV export** and a **PDF financial report** (filters: paid from/to, payout status).
 - **Audit log** (actor, action, time, entity) and in-app **notifications**. The sidebar badge refreshes every 15 s; admins are notified when a payment is received and when the customer confirms receipt, customers when their cargo arrives and when their payment is confirmed.
 
+### Email verification
+- Self-registered customers must verify their email (link sent by SMTP, e.g. Gmail App Password) before using the app. Demo accounts and users created by an admin are pre-verified. Configure `MAIL_*` in `.env`.
+
 ### Payments (Midtrans Snap, sandbox)
 - Payment opens as a Snap popup inside the app (the customer stays on CargoTrace; requires `MIDTRANS_CLIENT_KEY`).
 - Freight fee = weight x `CARGOTRACE_RATE_PER_KG` (default Rp 5.000), at least `CARGOTRACE_MIN_FEE` (default Rp 50.000). **Payment is open at any active status** (not after `DELIVERED` or `CANCELLED`); confirming receipt still needs `ARRIVED` + a PAID payment.

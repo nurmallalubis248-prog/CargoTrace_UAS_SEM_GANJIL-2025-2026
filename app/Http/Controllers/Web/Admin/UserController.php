@@ -28,6 +28,7 @@ class UserController extends Controller
 
         $user = new User(['name' => $data['name'], 'email' => $data['email'], 'password' => $data['password']]);
         $user->role = $data['role']; // explicit assignment: "role" is not mass-assignable
+        $user->email_verified_at = now(); // created by an admin: trusted, no verification email needed
         $user->save();
 
         $audit->log($request->user(), 'user.created', $user, ['role' => $user->role]);

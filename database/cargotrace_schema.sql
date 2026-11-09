@@ -34,6 +34,7 @@ CREATE TABLE `users` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL,
+  `email_verified_at` TIMESTAMP NULL,
   `password` VARCHAR(255) NOT NULL,
   `role` VARCHAR(20) NOT NULL DEFAULT 'customer',   -- admin | operator | customer
   `remember_token` VARCHAR(100) NULL,
@@ -280,11 +281,11 @@ CREATE TABLE `audit_logs` (
 SET @now = UTC_TIMESTAMP();
 
 -- users (password for all three accounts: password)
-INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`, `remember_token`, `created_at`, `updated_at`) VALUES
-  (1, 'Admin CargoTrace', 'admin@cargotrace.test', '$2y$12$Zx3Qm9vLpT7aKd2NwRs5eulBwwUGpfJpM0X7pabdNAXp/UzmC4kem', 'admin', NULL, @now, @now),
-  (2, 'Logistics Operator', 'operator@cargotrace.test', '$2y$12$Zx3Qm9vLpT7aKd2NwRs5eulBwwUGpfJpM0X7pabdNAXp/UzmC4kem', 'operator', NULL, @now, @now),
-  (3, 'PT Nusantara Export', 'customer1@cargotrace.test', '$2y$12$Zx3Qm9vLpT7aKd2NwRs5eulBwwUGpfJpM0X7pabdNAXp/UzmC4kem', 'customer', NULL, @now, @now),
-  (4, 'Samudra Trading Co.', 'customer2@cargotrace.test', '$2y$12$Zx3Qm9vLpT7aKd2NwRs5eulBwwUGpfJpM0X7pabdNAXp/UzmC4kem', 'customer', NULL, @now, @now);
+INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`) VALUES
+  (1, 'Admin CargoTrace', 'admin@cargotrace.test', @now, '$2y$12$Zx3Qm9vLpT7aKd2NwRs5eulBwwUGpfJpM0X7pabdNAXp/UzmC4kem', 'admin', NULL, @now, @now),
+  (2, 'Logistics Operator', 'operator@cargotrace.test', @now, '$2y$12$Zx3Qm9vLpT7aKd2NwRs5eulBwwUGpfJpM0X7pabdNAXp/UzmC4kem', 'operator', NULL, @now, @now),
+  (3, 'PT Nusantara Export', 'customer1@cargotrace.test', @now, '$2y$12$Zx3Qm9vLpT7aKd2NwRs5eulBwwUGpfJpM0X7pabdNAXp/UzmC4kem', 'customer', NULL, @now, @now),
+  (4, 'Samudra Trading Co.', 'customer2@cargotrace.test', @now, '$2y$12$Zx3Qm9vLpT7aKd2NwRs5eulBwwUGpfJpM0X7pabdNAXp/UzmC4kem', 'customer', NULL, @now, @now);
 
 -- carriers
 INSERT INTO `carriers` (`id`, `name`, `code`, `contact_email`, `is_active`, `created_at`, `updated_at`) VALUES

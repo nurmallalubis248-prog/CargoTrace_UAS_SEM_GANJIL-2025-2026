@@ -146,6 +146,7 @@ class DatabaseSeeder extends Seeder
 
         $user = new User(['name' => $name, 'email' => $email, 'password' => 'password']);
         $user->role = $role; // role is not mass-assignable
+        $user->email_verified_at = now(); // demo accounts are pre-verified
         $user->save();
 
         return $user;

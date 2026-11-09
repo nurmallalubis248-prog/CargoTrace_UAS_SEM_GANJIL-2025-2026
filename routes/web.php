@@ -30,9 +30,16 @@ Route::middleware('guest')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:10,1');
 });
 
+// Logged in, but the email does not have to be verified yet.
 Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('email/verify', [AuthController::class, 'verifyNotice'])->name('verification.notice');
+    Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+    Route::post('email/verification-notification', [AuthController::class, 'resendVerification'])->middleware('throttle:3,1')->name('verification.send');
+});
 
+// The whole app requires a verified email.
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('dashboard/stats', [DashboardStatsController::class, 'stats'])->name('dashboard.stats');
 
