@@ -16,6 +16,14 @@
     .grid > * { min-width: 0; }
     .card { min-width: 0; }
     p[data-idr] { font-size: clamp(1rem, 0.6rem + 1.1vw, 1.5rem); line-height: 1.25; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    /* Sidebar bergambar: hijau matcha ke pink, pesawat + globe di atas, truk + kapal di bawah */
+    aside.grad-side {
+        background:
+            url('{{ asset('images/side-bottom.png') }}') no-repeat bottom center / 100% auto,
+            url('{{ asset('images/side-top.png') }}') no-repeat top right / auto 200px,
+            linear-gradient(180deg, #6A9B42 0%, #70A146 45%, #8FB85C 72%, #F2C4D6 100%) !important;
+        padding-bottom: 5.75rem !important;   /* kotak pengguna/logout tetap di atas gambar truk */
+    }
 </style>
 </head>
 <body class="min-h-screen bg-matcha-50 text-ink-800">
