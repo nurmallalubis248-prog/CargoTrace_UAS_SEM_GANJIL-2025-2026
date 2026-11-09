@@ -22,7 +22,7 @@
     <button class="btn-accent" type="submit">Download PDF report</button>
 </form>
 
-<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+<div class="grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-4">
     <div class="card"><p class="text-xs font-semibold text-ink-500">Revenue received</p><p class="mt-1 text-xl font-bold" data-idr="{{ $revenue }}">{{ $idr($revenue) }}</p></div>
     <div class="card"><p class="text-xs font-semibold text-ink-500">Pending settlement</p><p class="mt-1 text-xl font-bold" data-idr="{{ $pendingSettlement }}">{{ $idr($pendingSettlement) }}</p></div>
     <div class="card"><p class="text-xs font-semibold text-ink-500">Settled</p><p class="mt-1 text-xl font-bold" data-idr="{{ $settled }}">{{ $idr($settled) }}</p></div>

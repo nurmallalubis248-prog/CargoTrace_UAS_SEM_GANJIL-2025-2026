@@ -61,6 +61,7 @@ class DashboardService
             ->whereIn('current_status', [
                 ShipmentStatus::BOOKED->value, ShipmentStatus::PICKED_UP->value, ShipmentStatus::IN_TRANSIT->value,
                 ShipmentStatus::ARRIVED->value,   // arrived but not yet paid + confirmed: stays on the map
+                ShipmentStatus::DELIVERED->value, // delivered shipments stay visible on the map
             ])
             ->whereNotNull('current_latitude')
             ->orderByDesc('last_event_at')

@@ -11,6 +11,12 @@
     <script>window.CT = window.CT || {}; CT.currencies = @json(config('cargotrace.currencies'));</script>
     <script src="{{ asset('js/ct-dict.js') }}?v={{ filemtime(public_path('js/ct-dict.js')) }}"></script>
     <script src="{{ asset('js/ct-i18n.js') }}?v={{ filemtime(public_path('js/ct-i18n.js')) }}"></script>
+<style>
+    /* Money cards: never overflow their card (all pages) */
+    .grid > * { min-width: 0; }
+    .card { min-width: 0; }
+    p[data-idr] { font-size: clamp(1rem, 0.6rem + 1.1vw, 1.5rem); line-height: 1.25; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+</style>
 </head>
 <body class="min-h-screen bg-matcha-50 text-ink-800">
 @php

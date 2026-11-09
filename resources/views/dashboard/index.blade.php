@@ -40,7 +40,7 @@
     @endforeach
 </div>
 
-<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-4">
+<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <a href="{{ $isAdmin ? route('admin.accounting.index') : route('reports.index') }}" class="{{ $cardCls }}"><p class="text-xs font-semibold text-ink-500" data-i18n="revenue">Revenue received</p><p id="k-paid" class="mt-1 text-2xl font-bold" data-idr="0">&ndash;</p><p id="k-paid-pending" class="text-xs text-ink-500"></p></a>
     <a href="{{ route('shipments.index', ['exception' => 'any']) }}" class="{{ $cardCls }}"><p class="text-xs font-semibold text-ink-500" data-i18n="excRate">Exception rate</p><p id="k-exc-rate" class="mt-1 text-2xl font-bold">&ndash;</p></a>
     <a href="{{ route('shipments.index', ['status' => 'DELIVERED', 'delayed' => 0]) }}" class="{{ $cardCls }}"><p class="text-xs font-semibold text-ink-500" data-i18n="onTime">On-time delivery rate</p><p id="k-ontime" class="mt-1 text-2xl font-bold">&ndash;</p></a>
