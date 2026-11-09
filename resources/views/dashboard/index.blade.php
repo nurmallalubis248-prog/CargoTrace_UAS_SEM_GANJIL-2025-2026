@@ -82,11 +82,15 @@
     <div class="card">
         <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div><h2 class="font-semibold" data-i18n="liveMap">Live shipment map</h2><p class="text-xs text-ink-500" data-i18n="liveMapSub"></p></div>
-            <div class="flex gap-3 text-xs font-semibold text-ink-600">
-                <span>✈ <span data-i18n="modeAir">Air</span></span><span>🚚 <span data-i18n="modeRoad">Road</span></span><span>🚢 <span data-i18n="modeSea">Sea</span></span>
+            <div id="mode-filter" class="flex flex-wrap items-center gap-2 text-xs font-semibold text-ink-600">
+                <button type="button" data-mode="" class="mode-btn rounded-full border border-ink-200 px-3 py-1" title="Semua">Semua <span id="cnt-ALL"></span></button>
+                <button type="button" data-mode="AIR" class="mode-btn rounded-full border border-ink-200 px-3 py-1">✈ <span data-i18n="modeAir">Air</span> <span id="cnt-AIR"></span></button>
+                <button type="button" data-mode="ROAD" class="mode-btn rounded-full border border-ink-200 px-3 py-1">🚚 <span data-i18n="modeRoad">Road</span> <span id="cnt-ROAD"></span></button>
+                <button type="button" data-mode="SEA" class="mode-btn rounded-full border border-ink-200 px-3 py-1">🚢 <span data-i18n="modeSea">Sea</span> <span id="cnt-SEA"></span></button>
             </div>
         </div>
         <p id="map-empty" class="mb-2 hidden text-sm text-ink-500" data-i18n="noPos"></p>
+        <p id="map-filter-empty" class="mb-2 hidden text-sm text-ink-500">Tidak ada pengiriman pada jalur ini.</p>
         <div id="map" class="h-[32rem] w-full rounded-xl" data-no-i18n></div>
     </div>
 </div>
@@ -157,6 +161,23 @@
     }
 
     let lastData = null;
+    let modeFilter = '';   // '' = semua, atau AIR / ROAD / SEA
+    function paintModeButtons() {
+        document.querySelectorAll('#mode-filter .mode-btn').forEach((b) => {
+            const on = b.dataset.mode === modeFilter;
+            b.style.background = on ? '#3F5729' : '#fff';
+            b.style.color = on ? '#fff' : '';
+            b.style.cursor = 'pointer';
+        });
+    }
+    document.querySelectorAll('#mode-filter .mode-btn').forEach((b) => {
+        b.addEventListener('click', () => {
+            modeFilter = (modeFilter === b.dataset.mode) ? '' : b.dataset.mode;   // klik lagi = kembali ke semua
+            paintModeButtons();
+            if (lastData) { render(lastData); }
+        });
+    });
+    paintModeButtons();
     const RISK = { ON_TIME: 'bg-matcha-100 text-matcha-800', LOW: 'bg-yellow-100 text-yellow-800', MEDIUM: 'bg-sakura-100 text-sakura-700', HIGH: 'bg-red-100 text-red-800' };
     function renderForecast(rows) {
         const tb = $('forecast-body');
@@ -212,7 +233,11 @@
 
         markers.clearLayers(); specs = {}; staticMk = {};
         const bounds = [], seenDest = {};
-        d.positions.filter(CT.inCountry).forEach((p) => {
+        const inCountry = d.positions.filter(CT.inCountry);
+        ['AIR', 'ROAD', 'SEA'].forEach((m) => { const el = $('cnt-' + m); if (el) { el.textContent = '(' + inCountry.filter((p) => p.mode === m).length + ')'; } });
+        const allEl = $('cnt-ALL'); if (allEl) { allEl.textContent = '(' + inCountry.length + ')'; }
+        const shown = modeFilter ? inCountry.filter((p) => p.mode === modeFilter) : inCountry;
+        shown.forEach((p) => {
             const ll = [Number(p.latitude), Number(p.longitude)];
             const hasDest = p.dest_lat !== null && p.dest_lat !== undefined && p.dest_lng !== null && p.dest_lng !== undefined
                 && isFinite(Number(p.dest_lat)) && isFinite(Number(p.dest_lng));
@@ -234,11 +259,12 @@
                 bounds.push(dest);
             }
         });
-        $('map-empty').classList.toggle('hidden', bounds.length > 0);
+        $('map-empty').classList.toggle('hidden', bounds.length > 0 || modeFilter !== '');
+        $('map-filter-empty').classList.toggle('hidden', bounds.length > 0 || modeFilter === '');
         if (bounds.length) { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5 }); }
         const ids = Object.keys(specs);
         const useId = (activeId !== null && specs[activeId]) ? activeId : (ids.length ? ids[0] : null);
-        if (useId !== null) { startLive(useId, false); }
+        if (useId !== null) { startLive(useId, false); } else if (live) { live.stop(); live = null; activeId = null; }
     }
 
     // Clock + calendar
