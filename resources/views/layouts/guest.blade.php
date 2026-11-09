@@ -8,26 +8,25 @@
     <script src="{{ asset('js/ct-dict.js') }}?v={{ filemtime(public_path('js/ct-dict.js')) }}"></script>
     <script src="{{ asset('js/ct-i18n.js') }}?v={{ filemtime(public_path('js/ct-i18n.js')) }}"></script>
     <style>
-        /* Layar lebar: gambar hero jadi latar penuh, form di area pink sebelah kanan.
-           Gambar sudah memuat logo, tagline, dan tiga fitur, jadi panel brand lama tidak dipakai lagi. */
+        /* Layar lebar: gambar hero jadi latar, dan form login menempati area pink KOSONG di sisi kanan gambar
+           (tanpa kartu melayang). Area kosong itu mulai di sekitar 62,5% lebar gambar. */
         @media (min-width: 1024px) {
             .login-stage {
-                background: #fbe9f1 url('{{ asset('images/login-hero.jpg') }}') no-repeat left center / cover;
+                height: 100vh; overflow: hidden;
+                background: #fdeef4 url('{{ asset('images/login-hero.jpg') }}') no-repeat left center / cover;
             }
-            .login-card {
-                background: rgba(255, 255, 255, .9);
-                backdrop-filter: blur(8px);
-                border-radius: 1.75rem;
-                padding: 2rem 2.25rem;
-                box-shadow: 0 24px 60px rgba(80, 110, 51, .20);
+            .login-form-col {
+                height: 100%; overflow-y: auto;
+                /* lebar gambar yang tampil = max(lebar layar, tinggi layar x 16/9); form dimulai di 62,5% dari lebar itu */
+                margin-left: min(max(62.5vw, calc(100vh * 1.7778 * 0.625)), calc(100vw - 26rem));
             }
         }
     </style>
 </head>
 <body class="min-h-screen bg-white">
-<div class="login-stage min-h-screen lg:flex lg:items-center lg:justify-end">
-    <section class="flex items-center justify-center p-6 sm:p-12 lg:w-[46%] lg:p-10 xl:pr-24">
-        <div class="login-card w-full max-w-md">
+<div class="login-stage min-h-screen">
+    <section class="login-form-col flex min-h-screen items-center justify-center p-6 sm:p-12 lg:min-h-0 lg:p-10">
+        <div class="w-full max-w-md">
             <div class="mb-4 flex justify-end">
                 <select data-lang-select aria-label="Language" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none"></select>
             </div>
