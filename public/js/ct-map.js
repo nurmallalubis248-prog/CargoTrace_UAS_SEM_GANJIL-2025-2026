@@ -49,6 +49,34 @@
       L.DomEvent.on(b, 'click', (e) => { L.DomEvent.stop(e); m.setView(view || [15, 80], zoom || 3); });
       L.DomEvent.disableClickPropagation(b); return b; } });
     m.addControl(new Reset());
+    // Tombol panah + "tampilkan semua pengiriman" (untuk pengguna touchpad)
+    const Pad = L.Control.extend({ options: { position: 'bottomright' }, onAdd: function () {
+      const w = L.DomUtil.create('div', 'leaflet-bar');
+      w.style.cssText = 'background:#fff;display:grid;grid-template-columns:repeat(3,30px);grid-auto-rows:30px;border-radius:8px;overflow:hidden';
+      const step = () => Math.round(Math.min(m.getSize().x, m.getSize().y) * 0.4);
+      const collect = (layer, out) => {   // kumpulkan penanda, termasuk yang ada di dalam grup
+        if (layer instanceof L.Marker) { if (layer.options.interactive !== false) { out.push(layer.getLatLng()); } }
+        else if (layer.eachLayer) { layer.eachLayer((l) => collect(l, out)); }
+      };
+      const fit = () => {
+        const pts = [];
+        m.eachLayer((l) => collect(l, pts));
+        if (pts.length) { m.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 6 }); }
+        else { m.setView(view || [15, 80], zoom || 3); }
+      };
+      const btn = (txt, title, fn, col, row) => {
+        const b = L.DomUtil.create('a', '', w); b.href = '#'; b.title = title; b.innerHTML = txt;
+        b.style.cssText = 'display:block;line-height:30px;text-align:center;font-weight:700;color:#3F5729;text-decoration:none;grid-column:' + col + ';grid-row:' + row;
+        L.DomEvent.on(b, 'click', (e) => { L.DomEvent.stop(e); fn(); });
+      };
+      btn('&#9650;', 'Atas',  () => m.panBy([0, -step()]), 2, 1);
+      btn('&#9664;', 'Kiri',  () => m.panBy([-step(), 0]), 1, 2);
+      btn('&#9678;', 'Tampilkan semua pengiriman', fit,    2, 2);
+      btn('&#9654;', 'Kanan', () => m.panBy([step(), 0]),  3, 2);
+      btn('&#9660;', 'Bawah', () => m.panBy([0, step()]),  2, 3);
+      L.DomEvent.disableClickPropagation(w); L.DomEvent.disableScrollPropagation(w);
+      return w; } });
+    m.addControl(new Pad());
     // Latitude / longitude grid (every 30 degrees) with labels, switchable from the layers control.
     const grid = L.layerGroup();
     const lab = (txt, ll) => L.marker(ll, { interactive: false, icon: L.divIcon({ className: '', html: '<span style="font:600 10px Manrope,sans-serif;color:#3F5729;background:rgba(255,255,255,.75);padding:0 3px;border-radius:3px">' + txt + '</span>', iconSize: [34, 14], iconAnchor: [17, 7] }) });
