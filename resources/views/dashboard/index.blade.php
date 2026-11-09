@@ -123,7 +123,7 @@
     const markers = L.layerGroup().addTo(map);
     const overviewLayer = L.layerGroup().addTo(map);   // pin tujuan + garis tipis semua pengiriman
     const routeLayer = L.layerGroup().addTo(map);      // rute nyata + jejak + kendaraan bergerak untuk pengiriman terpilih
-    let specs = {}, staticMk = {}, activeId = null, live = null;
+    let specs = {}, staticMk = {}, activeId = null, live = null, fleet = null;
     function startLive(id, fit) {
         const spec = specs[id]; if (!spec) { return; }
         if (live) { live.stop(); }
@@ -243,11 +243,12 @@
                 && isFinite(Number(p.dest_lat)) && isFinite(Number(p.dest_lng));
             const dest = hasDest ? [Number(p.dest_lat), Number(p.dest_lng)] : null;
             const brg = dest ? CT.bearing(ll, dest) : 0;
-            const m = CT.vehicle(p.mode, ll, p.delayed, brg).bindPopup(popup(p));
+            const isDone = p.status === 'DELIVERED';
+            const m = CT.vehicle(p.mode, ll, p.delayed, brg, isDone ? 'done' : 'moving').bindPopup(popup(p));
             staticMk[p.id] = m;
             if (dest) {
                 specs[p.id] = { from: (p.origin_lat != null && p.origin_lng != null) ? [Number(p.origin_lat), Number(p.origin_lng)] : ll, here: ll, dest: dest,
-                    mode: p.mode, delayed: p.delayed, done: false, arrived: p.status === 'ARRIVED', lastAt: p.last_ts, eta: p.eta_ts, popup: popup(p) };
+                    mode: p.mode, delayed: p.delayed, done: isDone, state: isDone ? 'done' : 'moving', arrived: p.status === 'ARRIVED', lastAt: p.last_ts, eta: p.eta_ts, popup: popup(p) };
                 m.on('click', () => startLive(p.id, true));
             }
             markers.addLayer(m);
@@ -263,7 +264,10 @@
         $('map-filter-empty').classList.toggle('hidden', bounds.length > 0 || modeFilter === '');
         if (bounds.length) { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5 }); }
         const ids = Object.keys(specs);
-        const useId = (activeId !== null && specs[activeId]) ? activeId : (ids.length ? ids[0] : null);
+        const useId = (activeId !== null && specs[activeId]) ? activeId : (ids.find((k) => !specs[k].done) || ids[0] || null);
+        if (fleet) { fleet.stop(); fleet = null; }
+        const movers = ids.filter((k) => !specs[k].done && !specs[k].arrived).map((k) => Object.assign({ marker: staticMk[k] }, specs[k]));
+        if (movers.length) { fleet = CT.liveFleet(map, movers); }
         if (useId !== null) { startLive(useId, false); } else if (live) { live.stop(); live = null; activeId = null; }
     }
 

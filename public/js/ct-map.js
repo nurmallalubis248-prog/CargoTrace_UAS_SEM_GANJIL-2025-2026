@@ -108,9 +108,11 @@
     return (Math.atan2(y, x) / r + 360) % 360;
   };
   /* Vehicle marker. Plane icon points north by default, so rotate by bearing; trucks/ships stay upright. */
-  CT.vehicle = function (mode, latlng, delayed, bearing) {
+  CT.vehicle = function (mode, latlng, delayed, bearing, state) {
     const rot = mode === 'AIR' ? (bearing || 0) : 0;
-    const html = '<div class="ct-veh ' + (delayed ? 'ct-veh-late' : '') + '"><span style="display:block;transform:rotate(' + rot + 'deg)">' + (ICON[mode] || ICON.SEA) + '</span></div>';
+    // state: 'done' = sudah terkirim (pink), 'moving' = masih berjalan (matcha)
+    const bg = state === 'done' ? '#D85A82' : (state === 'moving' ? '#506E33' : '');
+    const html = '<div class="ct-veh ' + (delayed ? 'ct-veh-late' : '') + '"' + (bg ? ' style="background:' + bg + '"' : '') + '><span style="display:block;transform:rotate(' + rot + 'deg)">' + (ICON[mode] || ICON.SEA) + '</span></div>';
     return L.marker(latlng, { icon: L.divIcon({ className: '', html: html, iconSize: [38, 38], iconAnchor: [19, 19] }) });
   };
   CT.routeStyle = function (mode) {
