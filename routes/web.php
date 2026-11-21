@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\DashboardController as DashboardStatsController;
 use App\Http\Controllers\Api\ExternalApiController;
+use App\Http\Controllers\DashboardOverviewController;
 use App\Http\Controllers\Web\Admin\AuditLogController;
 use App\Http\Controllers\Web\Admin\CarrierController;
 use App\Http\Controllers\Web\Admin\LocationController;
@@ -28,6 +29,9 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::get('register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+    // Admin / logistics sign-up (popup on the login page). Protected by an authorization code, see AuthController.
+    Route::post('register/{role}', [AuthController::class, 'registerStaff'])->where('role', 'admin|operator')
+        ->middleware('throttle:5,1')->name('register.staff');
 });
 
 // Logged in, but the email does not have to be verified yet.
@@ -42,6 +46,9 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('dashboard/stats', [DashboardStatsController::class, 'stats'])->name('dashboard.stats');
+    Route::get('dashboard/overview', DashboardOverviewController::class)->name('dashboard.overview');
+    Route::get('dashboard/locations', [DashboardOverviewController::class, 'locations'])->name('dashboard.locations');
+    Route::get('dashboard/metar', [DashboardOverviewController::class, 'metar'])->name('dashboard.metar');
 
     // Shipments (authorization via ShipmentPolicy inside the controller / form requests)
     Route::resource('shipments', ShipmentController::class);

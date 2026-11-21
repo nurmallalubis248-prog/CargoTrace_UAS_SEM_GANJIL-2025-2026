@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ShipmentStatus;
+use App\Models\AuditLog;
 use App\Models\Shipment;
 use App\Models\ShipmentException;
 use App\Models\User;
@@ -111,7 +112,94 @@ class DashboardService
                 ];
             })->values()->all();
 
+        // ---- Data for the visual dashboard (trend, status ring, latest shipments, top routes, activity) ----
+        $cancelled = ShipmentStatus::CANCELLED->value;
+        $since = now()->subDays(89)->startOfDay();
+        $rows = $base()->where('shipments.created_at', '>=', $since)->get(['shipments.created_at', 'shipments.is_delayed', 'shipments.current_status']);
+        $daily = [];
+        for ($i = 89; $i >= 0; $i--) {
+            $daily[now()->subDays($i)->toDateString()] = ['created' => 0, 'delayed' => 0, 'in_transit' => 0, 'delivered' => 0];
+        }
+        foreach ($rows as $r) {
+            $d = $r->created_at->toDateString();
+            if (! isset($daily[$d]) || $r->current_status->value === $cancelled) { continue; }
+            $daily[$d]['created']++;
+            if ($r->is_delayed) { $daily[$d]['delayed']++; }
+            if ($r->current_status === ShipmentStatus::IN_TRANSIT) { $daily[$d]['in_transit']++; }
+            if ($r->current_status === ShipmentStatus::DELIVERED) { $daily[$d]['delivered']++; }
+        }
+        $dailyOut = [];
+        foreach ($daily as $date => $v) {
+            $dailyOut[] = ['date' => $date, 'created' => $v['created'], 'delayed' => $v['delayed'], 'on_time' => $v['created'] - $v['delayed'], 'in_transit' => $v['in_transit'], 'delivered' => $v['delivered']];
+        }
+        // Change vs the previous 30 days (null when there is nothing to compare with).
+        $cut = now()->subDays(30)->toDateString();
+        $change = function (string $key) use ($daily, $cut): ?float {
+            $cur = 0; $prev = 0; $prevFrom = now()->subDays(60)->toDateString();
+            foreach ($daily as $date => $v) {
+                if ($date > $cut) { $cur += $v[$key]; } elseif ($date > $prevFrom) { $prev += $v[$key]; }
+            }
+
+            return $prev > 0 ? round(($cur - $prev) / $prev * 100, 0) : null;
+        };
+
+        // On time vs delayed ring, overall and per transport mode (air / road / sea).
+        $ring = ['ALL' => ['on_time' => 0, 'delayed' => 0]];
+        $modeRows = $base()->toBase()
+            ->join('carriers', 'carriers.id', '=', 'shipments.carrier_id')
+            ->where('shipments.current_status', '!=', $cancelled)
+            ->select('carriers.transport_mode', 'shipments.is_delayed', DB::raw('count(*) as c'))
+            ->groupBy('carriers.transport_mode', 'shipments.is_delayed')
+            ->get();
+        foreach ($modeRows as $mr) {
+            $mode = $mr->transport_mode ?: 'SEA';
+            $key = $mr->is_delayed ? 'delayed' : 'on_time';
+            $ring[$mode] ??= ['on_time' => 0, 'delayed' => 0];
+            $ring[$mode][$key] += (int) $mr->c;
+            $ring['ALL'][$key] += (int) $mr->c;
+        }
+
+        $recent = $base()->with(['origin', 'destination'])->orderByDesc('shipments.created_at')->orderByDesc('shipments.id')->limit(5)->get()
+            ->map(fn (Shipment $s) => [
+                'number' => $s->shipment_number,
+                'route' => ($s->origin?->name ?? '?').' → '.($s->destination?->name ?? '?'),
+                'status' => $s->current_status->value,
+                'delayed' => (bool) $s->is_delayed,
+                'eta_ts' => ($s->estimated_arrival_at ?? $s->expected_arrival_at) ? ($s->estimated_arrival_at ?? $s->expected_arrival_at)->getTimestamp() * 1000 : null,
+                'url' => route('shipments.show', $s),
+            ])->values()->all();
+
+        $topRoutes = $base()->toBase()
+            ->join('locations as lo', 'lo.id', '=', 'shipments.origin_id')
+            ->join('locations as ld', 'ld.id', '=', 'shipments.destination_id')
+            ->select('lo.name as o_name', 'ld.name as d_name', DB::raw('count(*) as c'))
+            ->groupBy('shipments.origin_id', 'shipments.destination_id', 'lo.name', 'ld.name')
+            ->orderByDesc('c')->limit(3)->get()
+            ->map(fn ($r) => ['route' => $r->o_name.' → '.$r->d_name, 'count' => (int) $r->c, 'share_pct' => $total ? round($r->c / $total * 100, 1) : 0.0])
+            ->values()->all();
+
+        $activity = [];
+        if ($user->isStaff()) {
+            $logs = AuditLog::with('actor')->orderByDesc('created_at')->orderByDesc('id')->limit(4)->get();
+            $numbers = Shipment::withTrashed()->whereIn('id', $logs->where('entity_type', 'Shipment')->pluck('entity_id')->filter()->all())->pluck('shipment_number', 'id');
+            $activity = $logs->map(fn (AuditLog $l) => [
+                'ts' => $l->created_at->getTimestamp() * 1000,
+                'actor' => $l->actor?->name ?? 'system',
+                'action' => $l->action,
+                'ref' => $l->entity_type === 'Shipment' ? ($numbers[$l->entity_id] ?? '#'.$l->entity_id) : ($l->changes['code'] ?? '#'.$l->entity_id),
+            ])->values()->all();
+        }
+
+        $late24 = $base()->where('is_delayed', true)->where('current_status', '!=', $cancelled)->where('delay_hours', '>', 24)->count();
+
         return [
+            'daily' => $dailyOut,
+            'change' => ['shipments' => $change('created'), 'in_transit' => $change('in_transit'), 'delivered' => $change('delivered'), 'delayed' => $change('delayed')],
+            'ring' => $ring,
+            'recent' => $recent,
+            'top_routes' => $topRoutes,
+            'activity' => $activity,
+            'important' => ['late_24h' => $late24],
             'delayed_list' => $delayedList,
             'carrier_ids' => $carrierIds,
             'forecast' => app(ForecastService::class)->forecast($base()),

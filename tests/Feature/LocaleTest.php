@@ -15,7 +15,7 @@ class LocaleTest extends TestCase
     {
         $this->get('/login')->assertOk()
             ->assertSee('Sign in to your account')
-            ->assertSee('data-lang-select', false)
+            ->assertSee('data-set-lang', false)
             ->assertSee('ct-i18n.js', false)
             ->assertSee('ct-dict.js', false);
     }

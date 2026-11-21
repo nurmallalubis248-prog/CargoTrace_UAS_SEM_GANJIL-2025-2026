@@ -22,6 +22,7 @@ class StoreLocationRequest extends FormRequest
             'type' => ['required', Rule::in(Location::TYPES)],
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 

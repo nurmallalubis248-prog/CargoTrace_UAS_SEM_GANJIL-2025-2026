@@ -17,13 +17,37 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 /** Accounting: payment ledger, revenue, payout (settlement) status, CSV and PDF export (IDR). */
 class AccountingController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $payments = Payment::with('shipment.customer')->latest()->limit(300)->get();
+        $date = fn ($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : '';
+        $filters = [
+            'date_from' => $date($request->query('date_from')),
+            'date_to' => $date($request->query('date_to')),
+            'status' => in_array($request->query('status'), ['PAID', 'PENDING', 'FAILED'], true) ? $request->query('status') : '',
+            'payout' => in_array($request->query('payout'), ['PENDING_SETTLEMENT', 'SETTLED'], true) ? $request->query('payout') : '',
+            'method' => trim((string) $request->query('method', '')),
+            'per_page' => in_array((int) $request->query('per_page'), [10, 25, 50], true) ? (int) $request->query('per_page') : 10,
+        ];
+
+        // Tanggal transaksi = waktu bayar bila sudah dibayar, jika belum memakai waktu dibuat.
+        $ledger = Payment::with('shipment.customer')
+            ->when($filters['date_from'] !== '', fn ($q) => $q->whereRaw('DATE(COALESCE(paid_at, created_at)) >= ?', [$filters['date_from']]))
+            ->when($filters['date_to'] !== '', fn ($q) => $q->whereRaw('DATE(COALESCE(paid_at, created_at)) <= ?', [$filters['date_to']]))
+            ->when($filters['status'] === 'FAILED', fn ($q) => $q->whereIn('status', ['FAILED', 'EXPIRED', 'CANCELLED']))
+            ->when(in_array($filters['status'], ['PAID', 'PENDING'], true), fn ($q) => $q->where('status', $filters['status']))
+            ->when($filters['payout'] !== '', fn ($q) => $q->where('status', 'PAID')->where('payout_status', $filters['payout']))
+            ->when($filters['method'] !== '', fn ($q) => $q->where('payment_type', $filters['method']))
+            ->orderByRaw('COALESCE(paid_at, created_at) DESC')
+            ->orderByDesc('id')
+            ->paginate($filters['per_page'])
+            ->withQueryString();
+
         $paid = Payment::where('status', 'PAID')->get();
 
         return view('admin.accounting', [
-            'payments' => $payments,
+            'payments' => $ledger,
+            'filters' => $filters,
+            'methods' => Payment::query()->whereNotNull('payment_type')->distinct()->orderBy('payment_type')->pluck('payment_type'),
             'revenue' => (int) $paid->sum('amount'),
             'pendingSettlement' => (int) $paid->where('payout_status', 'PENDING_SETTLEMENT')->sum('amount'),
             'settled' => (int) $paid->where('payout_status', 'SETTLED')->sum('amount'),

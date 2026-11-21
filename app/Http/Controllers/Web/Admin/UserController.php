@@ -12,9 +12,29 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('admin.users', ['users' => User::orderBy('name')->get()]);
+        $filters = [
+            'name' => trim((string) $request->query('name', '')),
+            'email' => trim((string) $request->query('email', '')),
+            'role' => in_array($request->query('role'), User::ROLES, true) ? $request->query('role') : '',
+            'status' => in_array($request->query('status'), ['verified', 'unverified'], true) ? $request->query('status') : '',
+            'per_page' => in_array((int) $request->query('per_page'), [10, 25, 50], true) ? (int) $request->query('per_page') : 10,
+        ];
+        $like = fn (string $v) => '%'.addcslashes($v, '%_\\').'%';
+
+        $users = User::query()
+            ->withCount('shipments')
+            ->when($filters['name'] !== '', fn ($q) => $q->where('name', 'like', $like($filters['name'])))
+            ->when($filters['email'] !== '', fn ($q) => $q->where('email', 'like', $like($filters['email'])))
+            ->when($filters['role'] !== '', fn ($q) => $q->where('role', $filters['role']))
+            ->when($filters['status'] === 'verified', fn ($q) => $q->whereNotNull('email_verified_at'))
+            ->when($filters['status'] === 'unverified', fn ($q) => $q->whereNull('email_verified_at'))
+            ->orderBy('name')
+            ->paginate($filters['per_page'])
+            ->withQueryString();
+
+        return view('admin.users', compact('users', 'filters'));
     }
 
     public function store(Request $request, AuditService $audit): RedirectResponse

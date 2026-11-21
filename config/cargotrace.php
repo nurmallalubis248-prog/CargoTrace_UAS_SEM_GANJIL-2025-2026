@@ -17,6 +17,13 @@ return [
     // Shows the demo accounts on the login page (set SHOW_DEMO_ACCOUNTS=true on the demo deployment).
     'show_demo_accounts' => (bool) env('SHOW_DEMO_ACCOUNTS', false),
 
+    // Authorization codes required to self-register a privileged account from the login page
+    // ("Register as" menu). An empty/missing code DISABLES registration for that role.
+    'registration_codes' => [
+        'admin' => env('ADMIN_REGISTRATION_CODE'),
+        'operator' => env('OPERATOR_REGISTRATION_CODE'),
+    ],
+
     // Freight fee (IDR) = weight_kg x rate_per_kg, at least min_fee.
     'payment' => [
         'rate_per_kg' => (int) env('CARGOTRACE_RATE_PER_KG', 5000),

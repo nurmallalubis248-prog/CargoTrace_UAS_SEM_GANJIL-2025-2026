@@ -11,8 +11,27 @@ class NotificationController extends Controller
 {
     public function index(Request $request): View
     {
+        $user = $request->user();
+        $tab = in_array($request->query('tab'), ['unread', 'read'], true) ? $request->query('tab') : 'all';
+
+        $notifications = $user->appNotifications()
+            ->with(['shipment.origin', 'shipment.destination'])
+            ->when($tab === 'unread', fn ($q) => $q->whereNull('read_at'))
+            ->when($tab === 'read', fn ($q) => $q->whereNotNull('read_at'))
+            ->latest()->orderByDesc('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        $unread = $user->appNotifications()->whereNull('read_at')->count();
+
         return view('notifications.index', [
-            'notifications' => $request->user()->appNotifications()->with('shipment')->latest()->paginate(15),
+            'notifications' => $notifications,
+            'tab' => $tab,
+            'counts' => [
+                'all' => $user->appNotifications()->count(),
+                'unread' => $unread,
+                'read' => $user->appNotifications()->whereNotNull('read_at')->count(),
+            ],
         ]);
     }
 

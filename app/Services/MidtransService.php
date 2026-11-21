@@ -70,17 +70,28 @@ class MidtransService
         return $res->json();
     }
 
-    /** Pull the latest status (works on localhost where webhooks cannot reach us). */
+    /**
+     * Pull the latest status (works on localhost where webhooks cannot reach us).
+     * Midtrans may answer HTTP 200 with an error inside the body (status_code 401/404 ...),
+     * so the body is validated and logged; an unusable answer returns null (payment stays as it is).
+     */
     public function fetchStatus(Payment $payment): ?array
     {
         $res = Http::withBasicAuth($this->cfg('server_key'), '')->acceptJson()->timeout(15)
             ->get($this->apiUrl().'/'.$payment->order_id.'/status');
 
-        if (! $res->successful()) {
-            Log::warning('Midtrans status check failed ('.$res->status().') for '.$payment->order_id.': '.$res->body());
+        $json = $res->json();
+        Log::info('Midtrans status HTTP '.$res->status().' for '.$payment->order_id.': '.$res->body());
+
+        if (! $res->successful() || ! is_array($json)
+            || (int) ($json['status_code'] ?? 0) >= 400
+            || empty($json['transaction_status'])) {
+            Log::warning('Midtrans status check not usable for '.$payment->order_id);
+
+            return null;
         }
 
-        return $res->successful() ? $res->json() : null;
+        return $json;
     }
 
     public function validSignature(array $n): bool

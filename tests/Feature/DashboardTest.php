@@ -51,6 +51,25 @@ class DashboardTest extends TestCase
             ->assertJsonPath('totals.shipments', 0)->assertJsonPath('rates.delay_rate_pct', 0);
     }
 
+    public function test_dashboard_returns_data_for_the_visual_widgets(): void
+    {
+        $operator = $this->makeUser(User::ROLE_OPERATOR);
+        $alice = $this->makeUser(User::ROLE_CUSTOMER);
+        $this->makeShipment($alice, $operator);
+
+        Sanctum::actingAs($operator);
+        $this->getJson('/api/dashboard')->assertOk()
+            ->assertJsonCount(90, 'daily')
+            ->assertJsonCount(1, 'recent')
+            ->assertJsonCount(1, 'top_routes')
+            ->assertJsonPath('ring.ALL.on_time', 1)
+            ->assertJsonStructure(['change' => ['shipments', 'in_transit', 'delivered', 'delayed'], 'important' => ['late_24h'], 'activity']);
+
+        // Customers never see the system activity feed.
+        Sanctum::actingAs($alice);
+        $this->getJson('/api/dashboard')->assertOk()->assertJsonCount(0, 'activity');
+    }
+
     public function test_web_pages_render_for_each_role_and_enforce_access(): void
     {
         $operator = $this->makeUser(User::ROLE_OPERATOR);

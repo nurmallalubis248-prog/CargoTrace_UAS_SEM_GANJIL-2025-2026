@@ -215,18 +215,15 @@
 
 @push('scripts')
 @if((int) auth()->id() === (int) $shipment->customer_id && $shipment->current_status->isPayable() && ! $shipment->payments->contains('status', 'PAID'))
-<script src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com' : 'https://app.sandbox.midtrans.com' }}/snap/snap.js"
-        data-client-key="{{ config('services.midtrans.client_key') }}"></script>
 <script>
-// In-app payment: Midtrans Snap opens as a popup on THIS page (no redirect to midtrans.com).
+// Payment: the customer is sent to the Midtrans payment page. After paying, Midtrans returns to
+// payments.sync (callbacks.finish), which pulls the latest status and marks the payment PAID.
 (function () {
     const btn = document.getElementById('pay-btn');
     if (!btn) { return; }
     const err = document.getElementById('pay-error');
     const csrf = document.querySelector('meta[name=csrf-token]').content;
     const show = (m) => { err.textContent = m; err.classList.remove('hidden'); btn.disabled = false; };
-    const finish = (paymentId) => fetch('/payments/' + paymentId + '/status', { headers: { 'Accept': 'application/json' } })
-        .finally(() => location.reload());
 
     btn.addEventListener('click', async () => {
         btn.disabled = true; err.classList.add('hidden');
@@ -235,13 +232,8 @@
             const d = await r.json();
             if (d.paid) { return location.reload(); }
             if (!r.ok) { return show(d.message || 'Payment could not be started.'); }
-            if (!window.snap) { return show('Midtrans popup failed to load. Check MIDTRANS_CLIENT_KEY in .env.'); }
-            window.snap.pay(d.token, {
-                onSuccess: () => finish(d.payment_id),
-                onPending: () => finish(d.payment_id),
-                onError: () => show('Payment failed. Please try again.'),
-                onClose: () => { btn.disabled = false; }
-            });
+            if (!d.redirect_url) { return show('Payment link is not available. Please try again.'); }
+            window.location.href = d.redirect_url;
         } catch (e) { show('Network error. Please try again.'); }
     });
 })();

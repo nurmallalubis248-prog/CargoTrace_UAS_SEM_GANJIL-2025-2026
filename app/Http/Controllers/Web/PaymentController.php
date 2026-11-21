@@ -56,7 +56,7 @@ class PaymentController extends Controller
         $reusable = $shipment->payments()->where('status', 'PENDING')->whereNotNull('snap_token')
             ->where('created_at', '>', now()->subHours(23))->latest('id')->first();
         if ($reusable) {
-            return response()->json(['token' => $reusable->snap_token, 'payment_id' => $reusable->id]);
+            return response()->json(['token' => $reusable->snap_token, 'redirect_url' => $reusable->redirect_url, 'payment_id' => $reusable->id]);
         }
         $shipment->payments()->where('status', 'PENDING')->update(['status' => 'EXPIRED']);
 
@@ -78,7 +78,7 @@ class PaymentController extends Controller
 
         $payment->update(['snap_token' => $snap['token'], 'redirect_url' => $snap['redirect_url'] ?? null]);
 
-        return response()->json(['token' => $payment->snap_token, 'payment_id' => $payment->id]);
+        return response()->json(['token' => $payment->snap_token, 'redirect_url' => $payment->redirect_url, 'payment_id' => $payment->id]);
     }
 
     /** Status check for the in-app popup (pulls the latest status from Midtrans, then returns it as JSON). */

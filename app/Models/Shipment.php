@@ -136,7 +136,9 @@ class Shipment extends Model
                 $term = '%'.$f['q'].'%';
                 $q->where(function (Builder $w) use ($term) {
                     $w->where('shipments.shipment_number', 'like', $term)
-                        ->orWhere('shipments.reference_number', 'like', $term);
+                        ->orWhere('shipments.reference_number', 'like', $term)
+                        ->orWhereHas('origin', fn (Builder $l) => $l->where('name', 'like', $term))
+                        ->orWhereHas('destination', fn (Builder $l) => $l->where('name', 'like', $term));
                 });
             })
             ->when(! empty($f['status']), fn (Builder $q) => $q->where('shipments.current_status', $f['status']))

@@ -1,0 +1,12 @@
+Halaman Notifikasi bergaya desain
+
+Timpa 3 file sesuai path:
+  app/Http/Controllers/Web/NotificationController.php
+  resources/views/notifications/index.blade.php
+  public/js/ct-dict.js
+
+PENTING: halaman ini memakai file bersama dari paket Laporan
+(partials/sh-styles.blade.php dan partials/pager.blade.php).
+Pastikan keduanya sudah ada.
+
+Lalu: php artisan view:clear && php artisan optimize:clear, Ctrl+F5.
