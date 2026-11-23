@@ -43,22 +43,41 @@ class RouteGeometry
     {
         $key = sprintf('route:%.3f,%.3f:%.3f,%.3f', $a[0], $a[1], $b[0], $b[1]);
 
-        return Cache::remember($key, now()->addDays(7), function () use ($a, $b) {
-            try {
-                $response = Http::timeout(8)->get(
-                    sprintf('https://router.project-osrm.org/route/v1/driving/%F,%F;%F,%F', $a[1], $a[0], $b[1], $b[0]),
-                    ['overview' => 'full', 'geometries' => 'geojson']
-                );
-                $coords = $response->json('routes.0.geometry.coordinates');
-                if (! $response->successful() || ! is_array($coords) || count($coords) < 2) {
-                    return null;
-                }
+        $hit = Cache::get($key);
+        if (is_array($hit)) {
+            return $hit;
+        }
+        if (Cache::has($key.':fail')) {
+            return null;   // baru saja gagal: jangan menunggu timeout 8 detik lagi tiap menit
+        }
 
-                return array_map(fn ($c) => [(float) $c[1], (float) $c[0]], $coords);
-            } catch (\Throwable) {
-                return null;   // offline or blocked: caller falls back to the great-circle line
+        $route = $this->fetchRoad($a, $b);
+        if ($route !== null) {
+            Cache::put($key, $route, now()->addDays(7));
+        } else {
+            Cache::put($key.':fail', 1, now()->addMinutes(10));
+        }
+
+        return $route;
+    }
+
+    /** @return array<int, array{0: float, 1: float}>|null */
+    private function fetchRoad(array $a, array $b): ?array
+    {
+        try {
+            $response = Http::timeout(8)->get(
+                sprintf('https://router.project-osrm.org/route/v1/driving/%F,%F;%F,%F', $a[1], $a[0], $b[1], $b[0]),
+                ['overview' => 'full', 'geometries' => 'geojson']
+            );
+            $coords = $response->json('routes.0.geometry.coordinates');
+            if (! $response->successful() || ! is_array($coords) || count($coords) < 2) {
+                return null;
             }
-        });
+
+            return array_map(fn ($c) => [(float) $c[1], (float) $c[0]], $coords);
+        } catch (\Throwable) {
+            return null;   // offline atau diblokir: pemanggil memakai garis lurus (great-circle)
+        }
     }
 
     /** @return array<int, array{0: float, 1: float}> */

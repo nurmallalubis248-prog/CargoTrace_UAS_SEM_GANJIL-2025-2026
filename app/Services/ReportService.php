@@ -24,7 +24,7 @@ class ReportService
         $ids = fn () => $query()->select('shipments.id');
 
         $rows = $query()
-            ->with(['customer', 'carrier', 'origin', 'destination', 'exceptions'])
+            ->with(['customer', 'carrier', 'origin', 'destination', 'exceptions', 'items'])
             ->orderByDesc('shipments.created_at')->orderByDesc('shipments.id')
             ->limit(self::MAX_ROWS)
             ->get();

@@ -13,6 +13,7 @@ use App\Models\TrackingEvent;
 use App\Models\User;
 use App\Services\EtaService;
 use App\Services\ShipmentService;
+use App\Services\SimulationService;
 use App\Services\TrackingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +32,7 @@ class ShipmentController extends Controller
         $filters = $request->validated();
 
         $shipments = Shipment::query()
-            ->with(['customer', 'carrier', 'origin', 'destination', 'exceptions'])
+            ->with(['customer', 'carrier', 'origin', 'destination', 'exceptions', 'items'])
             ->visibleTo($request->user())
             ->filter($filters)
             ->sortBy($filters['sort'] ?? null, $filters['dir'] ?? null)
@@ -65,6 +66,10 @@ class ShipmentController extends Controller
     {
         Gate::authorize('view', $shipment);
 
+        // Pastikan keadaan sesuai jam sekarang sebelum ditampilkan (aman diulang; refresh tidak mengubah apa pun).
+        app(SimulationService::class)->catchUp($shipment);
+        $shipment->refresh();
+
         $shipment->load(['customer', 'creator', 'carrier', 'origin', 'destination', 'items']);
 
         $events = $shipment->trackingEvents()->with(['creator', 'location'])
@@ -78,6 +83,8 @@ class ShipmentController extends Controller
             'done' => $shipment->current_status->value === 'DELIVERED',
             'arrived' => $shipment->current_status->value === 'ARRIVED',
             'last_ts' => $shipment->last_event_at ? $shipment->last_event_at->getTimestamp() * 1000 : null,
+            'dep_ts' => SimulationService::windowMs($shipment)[0] ?? null,   // jadwal untuk posisi kendaraan yang konsisten
+            'arr_ts' => SimulationService::windowMs($shipment)[1] ?? null,
             'eta_ts' => ($shipment->estimated_arrival_at ?? $shipment->expected_arrival_at)?->getTimestamp() * 1000 ?: null,
             'origin' => ['name' => $shipment->origin->name, 'lat' => $shipment->origin->latitude, 'lng' => $shipment->origin->longitude],
             'destination' => ['name' => $shipment->destination->name, 'lat' => $shipment->destination->latitude, 'lng' => $shipment->destination->longitude],
@@ -106,6 +113,9 @@ class ShipmentController extends Controller
     public function live(Shipment $shipment): JsonResponse
     {
         Gate::authorize('view', $shipment);
+
+        app(SimulationService::class)->catchUp($shipment);
+        $shipment->refresh();
 
         return response()->json([
             'status' => $shipment->current_status->value,

@@ -29,22 +29,22 @@
     $why = [
         ['pin',    'Real-Time Tracking',            'See every shipment on a live world map with city and country names, from origin to destination.'],
         ['clock',  'Automatic ETA & Delay Detection', 'Estimated arrival times are calculated automatically and delays are flagged the moment they happen.'],
-        ['card',   'Secure Payments',               'Pay by QRIS or bank transfer through the Midtrans gateway, with a receipt for every payment.'],
+        ['truck',  'Automatic Delivery',            'Shipments move on their own from booking to delivery, and every step is saved in the tracking history.'],
         ['plane',  'Air, Sea & Road Coverage',      'Plane, ship and truck routes in one place, each with its own icon on the map.'],
-        ['doc',    'Complete Reports & Receipts',   'Download PDF reports, receipts and accounting exports whenever you need them.'],
+        ['doc',    'Complete Reports',              'Download PDF reports and accounting exports whenever you need them.'],
         ['shield', 'Audit Trail & Role Access',     'Every action is logged, and admins, logistics staff and customers each see only what they need.'],
     ];
     $feat = [
         ['map',   'Interactive World Map',    'Zoom across continents and follow each shipment’s route, with a plane icon for air freight and a truck icon for road freight.'],
         ['alert', 'Smart Delay Management',   'Report and resolve delays with clear reasons, and notify the right people automatically.'],
-        ['card',  'Integrated Payment',       'A real payment gateway with QRIS and bank virtual accounts, plus payment status tracking for every shipment.'],
+        ['doc',   'Complete Tracking History', 'Every position and status change is stored, so you can review the whole journey of each shipment.'],
     ];
     $chips = ['7 languages', 'PDF reports', 'Audit logs', 'Weather info', 'Notifications', 'Accounting'];
     $steps = [
         ['user', 'Create an account', 'Register as a customer in seconds and verify your email.'],
         ['box',  'Book a shipment',   'Enter the origin, destination, carrier and cargo details.'],
-        ['card', 'Pay securely',      'Pay with QRIS or a bank virtual account.'],
-        ['done', 'Track & confirm',   'Follow the route live until it arrives, then confirm receipt.'],
+        ['truck', 'Ship automatically', 'The system moves your cargo along its route by itself.'],
+        ['done', 'Track & receive',   'Follow the route live until your cargo is delivered.'],
     ];
 @endphp
 
@@ -210,7 +210,6 @@
                 <li><button type="button" data-lp-open="login" data-i18n="signin">Sign in</button></li>
                 <li><button type="button" data-lp-open="customer">Register as customer</button></li>
                 <li><button type="button" data-lp-open="operator">Register as logistics staff</button></li>
-                <li><button type="button" data-lp-open="admin">Register as administrator</button></li>
             </ul>
         </div>
         <div>

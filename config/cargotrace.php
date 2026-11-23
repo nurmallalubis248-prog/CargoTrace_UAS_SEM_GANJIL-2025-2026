@@ -31,7 +31,7 @@ return [
     ],
 
     // Display currencies. rate = units of currency per 1 IDR (static, approximate; update or replace with a live rates API).
-    // Payments are always charged in IDR through Midtrans.
+    // Online payment (Midtrans) was removed; amounts are only displayed in these currencies.
     'currencies' => [
         'IDR' => ['rate' => 1, 'locale' => 'id-ID'],
         'USD' => ['rate' => 0.0000602, 'locale' => 'en-US'],
@@ -53,10 +53,16 @@ return [
         'HAZARDOUS' => 'Hazardous',
     ],
 
-    // Demo mode: a scheduled job moves active shipments along their route by writing real tracking events.
+    // Auto-shipping: a scheduled job (php artisan schedule:work) moves active shipments along their route by writing
+    // real tracking events, until they arrive and are DELIVERED. See App\Services\SimulationService.
     // Production deployments receive positions from carriers/drivers via POST /api/shipments/{id}/tracking instead.
     'simulation' => [
-        'enabled' => env('CARGOTRACE_SIMULATION', false),
-        'step_percent' => (int) env('CARGOTRACE_SIMULATION_STEP', 10),
+        'enabled' => (bool) env('CARGOTRACE_SIMULATION', false),
+        'step_percent' => (int) env('CARGOTRACE_SIMULATION_STEP', 10),           // only for mode 'step'
+        'mode' => env('CARGOTRACE_SIMULATION_MODE', 'time'),                     // 'time' = follows the clock, 'step' = old N% per run
+        'time_scale' => (float) env('CARGOTRACE_SIMULATION_TIME_SCALE', 1),      // 1 = real time; 144 = a 3-day trip takes ~30 min
+        'auto_book_minutes' => env('CARGOTRACE_SIMULATION_AUTO_BOOK_MINUTES', 1), // minutes after creation -> BOOKED; null = off
+        'auto_deliver' => (bool) env('CARGOTRACE_SIMULATION_AUTO_DELIVER', true), // ARRIVED -> DELIVERED without customer confirmation
+        'speed_kmh' => (float) env('CARGOTRACE_SIMULATION_SPEED_KMH', 50),       // only when arrival time <= departure time
     ],
 ];

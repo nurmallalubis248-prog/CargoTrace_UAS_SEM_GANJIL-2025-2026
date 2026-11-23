@@ -8,19 +8,24 @@ use App\Models\Shipment;
 use App\Models\User;
 use App\Services\SimulationService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 class SimulateShipments extends Command
 {
     protected $signature = 'cargotrace:simulate
-        {--step= : percent of the route to move per run (default from CARGOTRACE_SIMULATION_STEP)}
-        {--shipment= : only this shipment id}
-        {--actor= : e-mail of the user the events are recorded as (default: first operator, then admin)}';
+        {--mode= : "time" (default: posisi mengikuti jam, otomatis sampai DELIVERED) atau "step" (mode lama: maju N% per run)}
+        {--step= : mode step: persen rute per run (default dari CARGOTRACE_SIMULATION_STEP)}
+        {--shipment= : hanya pengiriman dengan id ini}
+        {--actor= : e-mail user pencatat event (default: operator pertama, lalu admin)}';
 
-    protected $description = 'Demo mode: move active shipments along their route by recording tracking events.';
+    protected $description = 'Jalankan pengiriman otomatis: pindahkan posisi kargo sesuai jadwal sampai tiba dan terkirim.';
 
     public function handle(SimulationService $simulation): int
     {
-        $step = (int) ($this->option('step') ?: config('cargotrace.simulation.step_percent', 10));
+        // Tanda "scheduler hidup": dibaca halaman admin & cargotrace:diagnose untuk memberi peringatan bila berhenti.
+        Cache::put('cargotrace.sim.heartbeat', now()->timestamp, now()->addDay());
+
+        $mode = $this->option('mode') ?: config('cargotrace.simulation.mode', 'time');
         $actor = $this->option('actor')
             ? User::where('email', $this->option('actor'))->first()
             : (User::where('role', User::ROLE_OPERATOR)->first() ?? User::where('role', User::ROLE_ADMIN)->first());
@@ -30,28 +35,37 @@ class SimulateShipments extends Command
             return self::FAILURE;
         }
 
+        // Semua yang belum selesai; SimulationService yang memutuskan apa yang perlu dilakukan pada tiap status.
         $query = Shipment::query()
-            ->whereIn('current_status', [ShipmentStatus::BOOKED->value, ShipmentStatus::PICKED_UP->value, ShipmentStatus::IN_TRANSIT->value])
+            ->whereNotIn('current_status', [ShipmentStatus::DELIVERED->value, ShipmentStatus::CANCELLED->value])
             ->with(['origin', 'destination', 'carrier']);
         if ($this->option('shipment')) {
             $query->whereKey($this->option('shipment'));
         }
 
-        $moved = 0;
+        $events = 0;
+        $touched = 0;
         foreach ($query->get() as $shipment) {
             try {
-                $event = $simulation->advance($shipment, $actor, $step);
-                if ($event) {
-                    $moved++;
-                    $status = $event->status ?? $event->event_type;
-                    $status = $status instanceof \BackedEnum ? $status->value : $status;
-                    $this->line(sprintf('%s: %s %s', $shipment->shipment_number, $status, $event->location_label));
+                if ($mode === 'step') {
+                    $step = (int) ($this->option('step') ?: config('cargotrace.simulation.step_percent', 10));
+                    $event = $simulation->advance($shipment, $actor, $step);
+                    $n = $event ? 1 : 0;
+                } else {
+                    $n = $simulation->tick($shipment, $actor);
                 }
             } catch (BusinessRuleException $e) {
                 $this->warn("{$shipment->shipment_number}: {$e->getMessage()}");
+                continue;
+            }
+
+            if ($n > 0) {
+                $touched++;
+                $events += $n;
+                $this->line(sprintf('%s: %d event(s) -> %s', $shipment->shipment_number, $n, $shipment->fresh()->current_status->value));
             }
         }
-        $this->info("Advanced {$moved} shipment(s).");
+        $this->info("Updated {$touched} shipment(s), {$events} event(s) written (mode: {$mode}).");
 
         return self::SUCCESS;
     }

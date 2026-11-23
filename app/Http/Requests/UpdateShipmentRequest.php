@@ -40,11 +40,20 @@ class UpdateShipmentRequest extends FormRequest
             'volume_cbm' => ['nullable', 'numeric', 'gt:0', 'max:99999999'],
             'expected_departure_at' => [$sometimes, 'date'],
             'expected_arrival_at' => [$sometimes, 'date', 'after:expected_departure_at'],
-            'items' => ['nullable', 'array', 'max:50'],
+            // Form web: minimal 1 barang wajib diisi. API (dan PATCH parsial) tetap opsional seperti sebelumnya.
+            'items' => ($this->is('api/*') || $this->isMethod('PATCH')) ? ['nullable', 'array', 'max:50'] : ['required', 'array', 'min:1', 'max:50'],
             'items.*.description' => ['required', 'string', 'max:255'],
             'items.*.quantity' => ['nullable', 'integer', 'min:1', 'max:1000000'],
             'items.*.weight_kg' => ['nullable', 'numeric', 'gt:0'],
             'items.*.volume_cbm' => ['nullable', 'numeric', 'gt:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'items.required' => 'Add at least one cargo item (item name).',
+            'items.min' => 'Add at least one cargo item (item name).',
         ];
     }
 }

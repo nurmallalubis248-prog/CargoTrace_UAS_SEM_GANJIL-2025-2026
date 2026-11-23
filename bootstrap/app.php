@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: ['midtrans/notification']);
+        // Pengiriman otomatis ikut mengejar jadwal tiap ada yang membuka aplikasi (lihat SimulationService::catchUp).
+        $middleware->web(append: [\App\Http\Middleware\CatchUpSimulation::class]);
         $middleware->alias([
             'erp.key' => \App\Http\Middleware\ErpKey::class,
             'role' => EnsureRole::class,

@@ -47,7 +47,7 @@
     .sh-arrow-off { opacity: .45; }
 
     .sh-tbl-wrap { overflow-x: auto; border-radius: 1.1rem; }
-    .sh-tbl { width: 100%; min-width: 62rem; border-collapse: separate; border-spacing: 0; }
+    .sh-tbl { width: 100%; min-width: 72rem; border-collapse: separate; border-spacing: 0; }
     .sh-tbl thead th { background: #FFE3EE; padding: .8rem .75rem; text-align: left; font-size: .8rem; font-weight: 800; color: #1B1F18; line-height: 1.2; white-space: nowrap; }
     .sh-tbl thead th:first-child { border-radius: 1.1rem 0 0 1.1rem; padding-left: 1rem; }
     .sh-tbl thead th:last-child { border-radius: 0 1.1rem 1.1rem 0; }
@@ -67,6 +67,8 @@
     .sh-b-grey   { background: #E9EAE6; color: #565E4E; } .sh-b-grey i   { background: #8A9080; }
     .sh-b-sky    { background: #D8F0F7; color: #0B6E86; } .sh-b-sky i    { background: #0EA5C4; }
     .sh-b-rose   { background: #F6E6EA; color: #9B3A52; } .sh-b-rose i   { background: #C0526E; }
+    .sh-goods { font-weight: 800; color: #1B1F18; font-size: .82rem; line-height: 1.25; }
+    .sh-more { display: inline-block; margin-left: .4rem; padding: .05rem .5rem; border-radius: 9999px; background: #FFE3EE; color: #E91E8C; font-size: .7rem; font-weight: 800; vertical-align: middle; }
     .sh-late { font-weight: 800; color: #E11D48; }
     .sh-detail { display: inline-flex; align-items: center; gap: .45rem; padding: .45rem .95rem; border-radius: 9999px; background: #FFE3EE; color: #E91E8C; font-weight: 800; font-size: .78rem; transition: background .15s; }
     .sh-detail:hover { background: #FFD0E3; }

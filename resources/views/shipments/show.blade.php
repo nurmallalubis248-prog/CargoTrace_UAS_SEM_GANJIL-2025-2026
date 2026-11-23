@@ -25,6 +25,18 @@
 <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
     <div class="card lg:col-span-2">
         <h2 class="mb-3 font-semibold">Details</h2>
+        <div class="mb-4 rounded-xl border border-ink-100 bg-ink-50 p-3">
+            <p class="label">Goods information</p>
+            @forelse($shipment->items as $item)
+                <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-ink-100 py-1.5 text-sm last:border-0">
+                    <span class="font-semibold">{{ $item->description }}</span>
+                    <span class="text-ink-600">{{ $item->quantity }} &times;@if($item->weight_kg) &middot; {{ rtrim(rtrim(number_format($item->weight_kg, 2, '.', ''), '0'), '.') }} kg @endif @if($item->volume_cbm) &middot; {{ rtrim(rtrim(number_format($item->volume_cbm, 2, '.', ''), '0'), '.') }} m³ @endif</span>
+                </div>
+            @empty
+                <p class="text-sm text-ink-500">No item name has been entered for this shipment.@can('update', $shipment) <a class="font-semibold underline" href="{{ route('shipments.edit', $shipment) }}">Add it</a>@endcan</p>
+            @endforelse
+            <p class="mt-2 text-xs text-ink-500">{{ config('cargotrace.cargo_types.'.$shipment->cargo_type, $shipment->cargo_type) }} &middot; {{ number_format($shipment->weight_kg, 2) }} kg @if($shipment->volume_cbm !== null) &middot; {{ number_format($shipment->volume_cbm, 2) }} m³ @endif</p>
+        </div>
         <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm md:grid-cols-3">
             <div><dt class="label">Customer</dt><dd>{{ $shipment->customer->name }}</dd></div>
             <div><dt class="label">Carrier</dt><dd>{{ $shipment->carrier->name }}</dd></div>
@@ -47,14 +59,6 @@
             <p class="label">ETA / delay rule result</p>
             <p>{{ $delay['reason'] }}</p>
         </div>
-        @if($shipment->items->isNotEmpty())
-            <h3 class="mt-4 mb-1 text-sm font-semibold">Items</h3>
-            <ul class="list-disc pl-5 text-sm">
-                @foreach($shipment->items as $item)
-                    <li>{{ $item->quantity }} &times; {{ $item->description }}@if($item->weight_kg) ({{ $item->weight_kg }} kg)@endif</li>
-                @endforeach
-            </ul>
-        @endif
     </div>
 
     <div class="card">
@@ -280,7 +284,7 @@
     const routes = L.layerGroup().addTo(map);
     // Real-road route (ROAD), great-circle (SEA/AIR), travelled trail, and a vehicle that keeps moving toward the ETA.
     CT.liveRoute(map, routes, { from: path[0], here: (data.done || data.arrived) ? dest : here, dest: dest, mode: data.mode, delayed: data.delayed, done: data.done, arrived: data.arrived,
-        lastAt: data.last_ts, eta: data.eta_ts, popup: popup([data.number, CT.modeLabel(data.mode)]), fit: false });
+        lastAt: data.last_ts, eta: data.eta_ts, dep: data.dep_ts, arr: data.arr_ts, popup: popup([data.number, CT.modeLabel(data.mode)]), fit: false });
     map.fitBounds(bounds, { padding: [40, 40] });
 
     // Live updates: when an operator (or the demo simulator) records a new event, reload so status, timeline and map are current.
@@ -290,7 +294,7 @@
             .then((r) => (r.ok ? r.json() : null))
             .then((d) => {
                 if (!d) { return; }
-                const key = d.events + '|' + d.status;
+                const key = d.status;   // muat ulang hanya saat status berubah (titik posisi baru tidak perlu reload)
                 const typing = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
                 if (seen !== null && key !== seen && !typing) { window.location.reload(); }
                 seen = key;

@@ -255,7 +255,7 @@
             staticMk[p.id] = m;
             if (dest) {
                 specs[p.id] = { from: (p.origin_lat != null && p.origin_lng != null) ? [Number(p.origin_lat), Number(p.origin_lng)] : ll, here: ll, dest: dest,
-                    mode: p.mode, delayed: p.delayed, done: isDone, state: isDone ? 'done' : 'moving', arrived: p.status === 'ARRIVED', lastAt: p.last_ts, eta: p.eta_ts, popup: popup(p) };
+                    mode: p.mode, delayed: p.delayed, done: isDone, state: isDone ? 'done' : 'moving', arrived: p.status === 'ARRIVED', lastAt: p.last_ts, eta: p.eta_ts, dep: p.dep_ts, arr: p.arr_ts, popup: popup(p) };
                 m.on('click', () => startLive(p.id, true));
             }
             markers.addLayer(m); bounds.push(ll);

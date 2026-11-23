@@ -4,7 +4,7 @@
   window.CT = window.CT || {};
   const R = 6371000, RAD = Math.PI / 180;
   /* Jam simulasi bersama: semua kendaraan memakai waktu yang sama, jadi tidak lompat saat pengiriman terpilih berganti. */
-  const SIM = { t0: Date.now(), w0: performance.now(), speed: 6000 };
+  const SIM = { t0: Date.now(), w0: performance.now(), speed: 1 };   // 1 = Live (jam nyata). Percepatan hanya bila dipilih sendiri lewat selektor; tidak lagi 6000x saat halaman dibuka.
   CT.simNow = () => SIM.t0 + (performance.now() - SIM.w0) * SIM.speed;
   CT.setSimSpeed = (v) => { SIM.t0 = CT.simNow(); SIM.w0 = performance.now(); SIM.speed = v; };
   const hav = (a, b) => {
@@ -123,7 +123,8 @@
         if (ts - lastDraw < 66 || document.hidden) { return; }      // about 15 fps
         simNow = CT.simNow(); lastDraw = ts;
         let p = p0;
-        if (s.eta && s.eta > lastAt) { p = p0 + (1 - p0) * Math.min(1, Math.max(0, (simNow - lastAt) / (s.eta - lastAt))); }
+        if (s.dep && s.arr && s.arr > s.dep) { p = Math.min(1, Math.max(0, (simNow - s.dep) / (s.arr - s.dep))); }   // posisi = fungsi jadwal + jam, sama setiap refresh
+        else if (s.eta && s.eta > lastAt) { p = p0 + (1 - p0) * Math.min(1, Math.max(0, (simNow - lastAt) / (s.eta - lastAt))); }
         if (s.arrived) { p = 1; } else if (!s.done) { p = Math.max(p0, Math.min(p, 0.995)); }
         const cur = at(pts, cum, p * total);
         veh.setLatLng(cur.p); ctrl.pos = cur.p;
@@ -167,7 +168,8 @@
       run.forEach((r) => {
         const s = r.s;
         let p = r.p0;
-        if (s.eta && s.eta > r.lastAt) { p = r.p0 + (1 - r.p0) * Math.min(1, Math.max(0, (now - r.lastAt) / (s.eta - r.lastAt))); }
+        if (s.dep && s.arr && s.arr > s.dep) { p = Math.min(1, Math.max(0, (now - s.dep) / (s.arr - s.dep))); }
+        else if (s.eta && s.eta > r.lastAt) { p = r.p0 + (1 - r.p0) * Math.min(1, Math.max(0, (now - r.lastAt) / (s.eta - r.lastAt))); }
         p = Math.max(r.p0, Math.min(p, 1));
         const cur = at(r.pts, r.cum, p * r.total);
         s.marker.setLatLng(cur.p);

@@ -12,6 +12,7 @@ use App\Http\Controllers\Web\Admin\AccountingController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\ExceptionController;
+use App\Http\Controllers\Web\LanguageController;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\ReportController;
@@ -21,8 +22,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'login'));
 
-// Midtrans webhook: public (no session), signature-verified, CSRF-exempt (see bootstrap/app.php)
-Route::post('midtrans/notification', [PaymentController::class, 'notification'])->name('midtrans.notification');
+// Pilih bahasa (boleh tanpa login, dipakai juga di halaman login).
+Route::get('lang/{locale}', [LanguageController::class, 'switch'])->name('lang.switch');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
@@ -79,10 +80,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('carriers', [CarrierController::class, 'index'])->name('carriers.index');
         Route::post('carriers', [CarrierController::class, 'store'])->name('carriers.store');
         Route::patch('carriers/{carrier}/toggle', [CarrierController::class, 'toggle'])->name('carriers.toggle');
+        Route::put('carriers/{carrier}', [CarrierController::class, 'update'])->name('carriers.update');
+        Route::delete('carriers/{carrier}', [CarrierController::class, 'destroy'])->name('carriers.destroy');
 
         Route::get('locations', [LocationController::class, 'index'])->name('locations.index');
         Route::post('locations', [LocationController::class, 'store'])->name('locations.store');
         Route::patch('locations/{location}/toggle', [LocationController::class, 'toggle'])->name('locations.toggle');
+        Route::put('locations/{location}', [LocationController::class, 'update'])->name('locations.update');
+        Route::delete('locations/{location}', [LocationController::class, 'destroy'])->name('locations.destroy');
 
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::post('users', [UserController::class, 'store'])->name('users.store');
@@ -91,6 +96,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('warehouses', [WarehouseController::class, 'index'])->name('warehouses.index');
         Route::post('warehouses', [WarehouseController::class, 'store'])->name('warehouses.store');
         Route::patch('warehouses/{warehouse}/toggle', [WarehouseController::class, 'toggle'])->name('warehouses.toggle');
+        Route::put('warehouses/{warehouse}', [WarehouseController::class, 'update'])->name('warehouses.update');
+        Route::delete('warehouses/{warehouse}', [WarehouseController::class, 'destroy'])->name('warehouses.destroy');
 
         Route::get('accounting', [AccountingController::class, 'index'])->name('accounting.index');
         Route::get('accounting/export', [AccountingController::class, 'export'])->name('accounting.export');

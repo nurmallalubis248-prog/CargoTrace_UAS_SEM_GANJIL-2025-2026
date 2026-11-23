@@ -22,6 +22,7 @@ $statusView = function ($s) {
             <th>No.</th>
             <th>Shipment no. / PO</th>
             <th>Route</th>
+            <th>Goods</th>
             <th>Carrier</th>
             <th>Customer</th>
             <th>Status</th>
@@ -41,6 +42,15 @@ $statusView = function ($s) {
                     @if($s->reference_number)<div class="sh-sub" data-no-i18n>{{ $s->reference_number }}</div>@endif
                 </td>
                 <td><span data-no-i18n>{{ $s->origin->name }} → {{ $s->destination->name }}</span></td>
+                <td style="min-width:11rem">
+                    @php $its = $s->items; $first = $its->first(); $extra = $its->count() - 1; $cargoLbl = config('cargotrace.cargo_types.'.$s->cargo_type, $s->cargo_type); @endphp
+                    @if($first)
+                        <div class="sh-goods" title="{{ $its->pluck('description')->implode(', ') }}"><span data-no-i18n>{{ \Illuminate\Support\Str::limit($first->description, 34) }}</span>@if($extra > 0)<span class="sh-more" data-no-i18n>+{{ $extra }}</span>@endif</div>
+                    @else
+                        <div class="sh-sub">-</div>
+                    @endif
+                    <div class="sh-sub"><span>{{ $cargoLbl }}</span> · <span data-no-i18n>{{ rtrim(rtrim(number_format($s->weight_kg, 2, '.', ''), '0'), '.') }} kg</span></div>
+                </td>
                 <td data-no-i18n>{{ $s->carrier->name }}</td>
                 <td data-no-i18n>{{ $s->customer->name }}</td>
                 <td><span class="sh-badge sh-b-{{ $stColor }}"><i></i><span>{{ $stLabel }}</span></span></td>
@@ -74,7 +84,7 @@ $statusView = function ($s) {
                 </td>
             </tr>
         @empty
-            <tr><td class="sh-empty" colspan="10">No shipments match your filters.</td></tr>
+            <tr><td class="sh-empty" colspan="11">No shipments match your filters.</td></tr>
         @endforelse
         </tbody>
     </table>

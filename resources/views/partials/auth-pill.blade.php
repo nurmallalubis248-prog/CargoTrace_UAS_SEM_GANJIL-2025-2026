@@ -1,17 +1,11 @@
 {{--
-    Kontrol pojok kanan atas halaman tamu (login / daftar): menu "Daftar sebagai" (Admin / Customer / Logistik)
-    dan pemilih bahasa. Admin, Pelanggan & Logistik membuka popup registrasi (Admin/Logistik dilindungi kode otorisasi, lihat
+    Kontrol pojok kanan atas halaman tamu (login / daftar): menu "Daftar sebagai" (Customer / Logistik)
+    dan pemilih bahasa. Pelanggan & Logistik membuka popup registrasi (Logistik dilindungi kode otorisasi, lihat
     AuthController::registerStaff). Dipakai oleh layouts/guest.blade.php.
 --}}
 @php
     // Popup registrasi. 'code' = butuh kode otorisasi (route register.staff); pelanggan memakai route register biasa.
     $staffRoles = [
-        'admin' => [
-            'icon' => 'crown', 'code' => true,
-            'title' => 'Register as administrator',
-            'note' => 'Admin accounts require an authorization code from the system owner.',
-            'button' => 'Create admin account',
-        ],
         'customer' => [
             'icon' => 'user', 'code' => false,
             'title' => 'Register as customer',
@@ -31,7 +25,6 @@
         'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
         'globe' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
         'chev' => '<path d="M6 9l6 6 6-6"/>',
-        'crown' => '<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/>',
         'login' => '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>',
         'truck' => '<path d="M1 6h13v10H1zM14 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
     ];
@@ -79,7 +72,6 @@
             </button>
             <div class="ct-menu" role="menu" hidden>
                 <p class="ct-menu-title">Register as:</p>
-                <button type="button" role="menuitem" class="ct-menu-item" data-open-reg="admin"><span class="ct-ic" style="color:#e11d74">{!! $svg('crown') !!}</span>Admin</button>
                 <button type="button" role="menuitem" class="ct-menu-item" data-open-reg="customer"><span style="color:#e11d74">{!! $svg('user') !!}</span>Customer</button>
                 <button type="button" role="menuitem" class="ct-menu-item" data-open-reg="operator"><span style="color:#e11d74">{!! $svg('truck') !!}</span>Logistics</button>
             </div>
@@ -239,7 +231,7 @@
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     });
-    var auto = document.querySelector('[data-reg-modal][data-auto-open]');   /* validasi gagal -> popup (login / admin / logistik) terbuka lagi dengan pesan galat */
+    var auto = document.querySelector('[data-reg-modal][data-auto-open]');   /* validasi gagal -> popup (login / customer / logistik) terbuka lagi dengan pesan galat */
     if (auto) { document.body.style.overflow = 'hidden'; var bad = auto.querySelector('input[name=access_code]') || (auto.querySelector('.text-red-800') ? auto.querySelector('input[name=password]') : auto.querySelector('input')); if (bad) { bad.focus(); } }
 
     /* Bahasa */

@@ -1,12 +1,17 @@
-Halaman Notifikasi bergaya desain
+Perjalanan pengiriman nyata (berdasarkan jam, tahan laptop mati & refresh)
 
-Timpa 3 file sesuai path:
-  app/Http/Controllers/Web/NotificationController.php
-  resources/views/notifications/index.blade.php
-  public/js/ct-dict.js
+Timpa/tambahkan 17 file sesuai path (paket ini sudah mencakup paket "perbaikan-simulasi"), lalu di folder proyek:
+  php artisan config:clear
+  php artisan view:clear
 
-PENTING: halaman ini memakai file bersama dari paket Laporan
-(partials/sh-styles.blade.php dan partials/pager.blade.php).
-Pastikan keduanya sudah ada.
+Periksa:
+  php artisan cargotrace:diagnose --selftest
 
-Lalu: php artisan view:clear && php artisan optimize:clear, Ctrl+F5.
+Cara kerja singkat:
+- Posisi pengiriman = fungsi dari JADWAL (berangkat -> tiba) dan JAM NYATA. Bukan animasi yang mulai dari awal.
+- Setiap halaman yang dibuka otomatis "mengejar jadwal" (maks. sekali per 15 detik), jadi walaupun
+  aplikasi/laptop mati lama, begitu dibuka lagi pengiriman sudah di posisi seharusnya, lengkap dengan riwayat.
+- scheduler (php artisan schedule:work / start-simulasi.bat) kini OPSIONAL; hanya membuat pembaruan tetap berjalan
+  saat tidak ada yang membuka aplikasi.
+- Peta memakai kecepatan Live (1x) secara bawaan; refresh tidak mengubah posisi.
+- Agar benar-benar berjalan 24 jam tanpa laptop: pasang di server online + cron "* * * * * php artisan schedule:run".

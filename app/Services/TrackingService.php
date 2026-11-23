@@ -26,10 +26,13 @@ class TrackingService
      *  - event time not in the future and not earlier than the latest existing event
      *  - STATUS_UPDATE must be a valid transition of the state machine
      * Existing events are never modified.
+     *
+     * $system = true hanya boleh diisi dari kode server (SimulationService), tidak pernah dari input pengguna:
+     * pengiriman otomatis sampai tujuan (DELIVERED) tanpa konfirmasi customer dan tanpa syarat pembayaran.
      */
-    public function addEvent(Shipment $shipment, array $data, User $actor): TrackingEvent
+    public function addEvent(Shipment $shipment, array $data, User $actor, bool $system = false): TrackingEvent
     {
-        return DB::transaction(function () use ($shipment, $data, $actor) {
+        return DB::transaction(function () use ($shipment, $data, $actor, $system) {
             $shipment = Shipment::query()->lockForUpdate()->findOrFail($shipment->id);
 
             if ($shipment->current_status->isTerminal()) {
@@ -64,13 +67,10 @@ class TrackingService
                 }
             }
 
-            if ($newStatus === ShipmentStatus::DELIVERED) {
-                // Delivery = the customer confirmed receipt (an admin may do it on their behalf), and only after paying.
+            if ($newStatus === ShipmentStatus::DELIVERED && ! $system) {
+                // Delivery = the customer confirmed receipt (an admin may do it on their behalf). Online payment was removed, so no PAID check.
                 if ((int) $actor->id !== (int) $shipment->customer_id && ! $actor->isAdmin()) {
                     throw new BusinessRuleException('Only the customer (or an admin) can confirm receipt of the cargo.');
-                }
-                if (! $shipment->payments()->where('status', 'PAID')->exists()) {
-                    throw new BusinessRuleException('Receipt can only be confirmed after the freight payment is PAID.');
                 }
             }
 
@@ -127,12 +127,16 @@ class TrackingService
             if ($newStatus) {
                 $no = $shipment->shipment_number;
                 $message = match ($newStatus) {
-                    ShipmentStatus::ARRIVED => "Shipment {$no} has arrived. Please pay the freight, then confirm receipt.",
-                    ShipmentStatus::DELIVERED => "Shipment {$no} is DELIVERED: receipt was confirmed.",
+                    ShipmentStatus::ARRIVED => SimulationService::autoDeliver()
+                        ? "Shipment {$no} has arrived at its destination."
+                        : "Shipment {$no} has arrived. Please confirm receipt.",
+                    ShipmentStatus::DELIVERED => $system
+                        ? "Shipment {$no} has been DELIVERED to its destination."
+                        : "Shipment {$no} is DELIVERED: receipt was confirmed.",
                     default => "Shipment {$no} is now {$newStatus->value}.",
                 };
                 $this->notifications->notifyShipmentParties($shipment, 'STATUS_CHANGED', $message, $actor);
-                if ($newStatus === ShipmentStatus::DELIVERED) {
+                if ($newStatus === ShipmentStatus::DELIVERED && ! $system) {
                     $this->notifications->notifyAdmins('DELIVERY_CONFIRMED', "Shipment {$no} was confirmed as received by the customer.", $shipment, $actor);
                 }
             }
@@ -146,6 +150,7 @@ class TrackingService
 
             $this->audit->log($actor, 'tracking.added', $shipment, [
                 'event_id' => $event->id, 'event_type' => $type, 'status' => $newStatus?->value,
+                'system' => $system,
             ]);
 
             return $event;

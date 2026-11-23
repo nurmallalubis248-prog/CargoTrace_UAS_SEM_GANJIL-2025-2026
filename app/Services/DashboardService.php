@@ -81,6 +81,8 @@ class DashboardService
                 'origin_lat' => $s->origin?->latitude,
                 'origin_lng' => $s->origin?->longitude,
                 'last_ts' => $s->last_event_at ? $s->last_event_at->getTimestamp() * 1000 : null,
+                'dep_ts' => \App\Services\SimulationService::windowMs($s)[0] ?? null,
+                'arr_ts' => \App\Services\SimulationService::windowMs($s)[1] ?? null,
                 'eta_ts' => ($s->estimated_arrival_at ?? $s->expected_arrival_at) ? ($s->estimated_arrival_at ?? $s->expected_arrival_at)->getTimestamp() * 1000 : null,
                 'delayed' => $s->is_delayed,
                 'latitude' => $s->current_latitude,
