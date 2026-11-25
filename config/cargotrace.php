@@ -31,7 +31,7 @@ return [
     ],
 
     // Display currencies. rate = units of currency per 1 IDR (static, approximate; update or replace with a live rates API).
-    // Online payment (Midtrans) was removed; amounts are only displayed in these currencies.
+    // Fees are calculated in IDR; other currencies are display-only (static rates).
     'currencies' => [
         'IDR' => ['rate' => 1, 'locale' => 'id-ID'],
         'USD' => ['rate' => 0.0000602, 'locale' => 'en-US'],

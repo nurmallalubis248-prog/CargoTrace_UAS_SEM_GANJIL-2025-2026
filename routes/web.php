@@ -59,9 +59,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('shipments/{shipment}/weather', [ExternalApiController::class, 'weather'])->name('shipments.weather');
     Route::get('shipments/{shipment}/live', [ShipmentController::class, 'live'])->name('shipments.live');
 
-    Route::post('shipments/{shipment}/pay', [PaymentController::class, 'store'])->middleware('throttle:10,1')->name('shipments.pay');
-    Route::get('payments/{payment}/sync', [PaymentController::class, 'sync'])->name('payments.sync');
-    Route::get('payments/{payment}/status', [PaymentController::class, 'status'])->name('payments.status');
     Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
     Route::post('shipments/{shipment}/confirm', [ShipmentController::class, 'confirm'])->name('shipments.confirm');
 

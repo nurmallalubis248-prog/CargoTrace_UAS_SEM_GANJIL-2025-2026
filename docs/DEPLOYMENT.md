@@ -5,7 +5,7 @@ Target: a public URL where a recruiter can log in with a demo account. Any host 
 ## 1. Prepare the server
 1. PHP 8.2+ with `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`, `fileinfo`.
 2. Create an empty MySQL database and a dedicated database user (not `root`).
-3. HTTPS enabled (needed by the service worker and the Midtrans webhook).
+3. HTTPS enabled (needed by the service worker).
 
 ## 2. Install
 ```bash
@@ -30,7 +30,6 @@ ERP_API_KEY=<random>               # php -r "echo bin2hex(random_bytes(24));"
 GEOCODING_USER_AGENT="CargoTrace-UAS (your-email@example.com)"
 CARGOTRACE_DELAY_LOW_MAX_HOURS=6   # set to your group's scenario
 CARGOTRACE_DELAY_MEDIUM_MAX_HOURS=24
-# MIDTRANS_* : sandbox keys only, never commit them
 ```
 
 ## 4. Database, permissions, caches

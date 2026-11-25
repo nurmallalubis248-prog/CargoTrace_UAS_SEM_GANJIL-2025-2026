@@ -217,7 +217,7 @@ CREATE TABLE `shipment_exceptions` (
   CONSTRAINT `shipment_exceptions_reported_by_foreign` FOREIGN KEY (`reported_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ---------------------------------------------------------------- payments (Midtrans) + payout status
+-- ---------------------------------------------------------------- payments + payout status
 CREATE TABLE `payments` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `shipment_id` BIGINT UNSIGNED NOT NULL,

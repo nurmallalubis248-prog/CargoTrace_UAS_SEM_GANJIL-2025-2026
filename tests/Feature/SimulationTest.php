@@ -108,7 +108,7 @@ class SimulationTest extends TestCase
     {
         [$shipment] = $this->booked();
 
-        $this->artisan('cargotrace:simulate', ['--step' => 20])->expectsOutputToContain('Updated 1 shipment')->assertSuccessful();
+        $this->artisan('cargotrace:simulate', ['--mode' => 'step', '--step' => 20])->expectsOutputToContain('Updated 1 shipment')->assertSuccessful();
 
         $this->assertSame('PICKED_UP', $shipment->fresh()->current_status->value);
     }

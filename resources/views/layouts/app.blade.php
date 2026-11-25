@@ -78,10 +78,9 @@
         'accounting'=> 'M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01',
         'users'     => 'M15 19.13a9.37 9.37 0 0 0 4.12-.95 4.13 4.13 0 0 0-7.53-2.5M15 19.13v-.01a8.97 8.97 0 0 1-12 0v-.01m12 .02a6.38 6.38 0 0 0-12 .02M12 7.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm7.5 1.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z',
         'audit'     => 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7.5V12l3 2',
-        'globe'     => 'M12 21a9 9 0 0 0 8.7-6.75M12 21a9 9 0 0 1-8.7-6.75M12 21c2.5 0 4.5-4 4.5-9S14.5 3 12 3m0 18c-2.5 0-4.5-4-4.5-9S9.5 3 12 3m0 0a9 9 0 0 1 7.84 4.58M12 3a9 9 0 0 0-7.84 4.58m15.68 0A12 12 0 0 1 12 10.5c-3 0-5.74-1.1-7.84-2.92m15.68 0A9 9 0 0 1 21 12c0 .78-.1 1.53-.28 2.25m0 0A17.9 17.9 0 0 1 12 16.5c-3.16 0-6.13-.82-8.72-2.25m0 0A9 9 0 0 1 3 12c0-1.6.42-3.11 1.16-4.42',
     ];
     // Label bawaan (Indonesia) bila kamus i18n belum punya kuncinya
-    $labels = ['dashboard'=>'Dashboard','shipments'=>'Pengiriman','reports'=>'Laporan','notifications'=>'Notifikasi','carriers'=>'Pengangkut','locations'=>'Lokasi','warehouses'=>'Gudang','accounting'=>'Akuntansi','users'=>'Pengguna','audit'=>'Log Audit','globe'=>'Peta Global'];
+    $labels = ['dashboard'=>'Dashboard','shipments'=>'Pengiriman','reports'=>'Laporan','notifications'=>'Notifikasi','carriers'=>'Pengangkut','locations'=>'Lokasi','warehouses'=>'Gudang','accounting'=>'Akuntansi','users'=>'Pengguna','audit'=>'Log Audit'];
     $links = [['dashboard','dashboard','dashboard','dashboard'], ['shipments','shipments.index','shipments.*','shipments'], ['reports','reports.index','reports.*','reports'], ['notifications','notifications.index','notifications.*','notifications']];
     $adminLinks = $user->isAdmin() ? [['carriers','admin.carriers.index','admin.carriers.*','carriers'], ['locations','admin.locations.index','admin.locations.*','locations'], ['warehouses','admin.warehouses.index','admin.warehouses.*','warehouses'], ['accounting','admin.accounting.index','admin.accounting.*','accounting'], ['users','admin.users.index','admin.users.*','users'], ['audit','admin.audit.index','admin.audit.*','audit']] : [];
 @endphp

@@ -127,7 +127,7 @@ class ShipmentController extends Controller
     }
 
     /**
-     * "Confirm received": only the shipment's customer, only after ARRIVED and a PAID payment.
+     * "Confirm received": only the shipment's customer, only after ARRIVED.
      * The rules live in TrackingService (a violation redirects back with an error message).
      */
     public function confirm(Request $request, Shipment $shipment, TrackingService $tracking): RedirectResponse

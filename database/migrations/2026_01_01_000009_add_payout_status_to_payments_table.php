@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            // PENDING_SETTLEMENT = money is with the payment gateway; SETTLED = the admin confirmed it reached the bank account.
+            // PENDING_SETTLEMENT = recorded as paid, not yet settled; SETTLED = the admin confirmed it reached the bank account.
             $table->string('payout_status', 20)->default('PENDING_SETTLEMENT')->after('status');
             $table->timestamp('settled_at')->nullable()->after('paid_at');
             $table->index('payout_status');

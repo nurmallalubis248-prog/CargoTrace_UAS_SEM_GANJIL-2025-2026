@@ -43,11 +43,6 @@ enum ShipmentStatus: string
      * (SimulationService) no longer waits for payment, so an unpaid invoice must stay payable afterwards.
      * In manual mode, confirming receipt still needs ARRIVED + PAID.
      */
-    public function isPayable(): bool
-    {
-        return in_array($this, [self::CREATED, self::BOOKED, self::PICKED_UP, self::IN_TRANSIT, self::ARRIVED, self::DELIVERED], true);
-    }
-
     public function isTerminal(): bool
     {
         return $this->allowedNext() === [];

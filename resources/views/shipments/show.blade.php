@@ -218,31 +218,6 @@
 @endsection
 
 @push('scripts')
-@if((int) auth()->id() === (int) $shipment->customer_id && $shipment->current_status->isPayable() && ! $shipment->payments->contains('status', 'PAID'))
-<script>
-// Payment: the customer is sent to the Midtrans payment page. After paying, Midtrans returns to
-// payments.sync (callbacks.finish), which pulls the latest status and marks the payment PAID.
-(function () {
-    const btn = document.getElementById('pay-btn');
-    if (!btn) { return; }
-    const err = document.getElementById('pay-error');
-    const csrf = document.querySelector('meta[name=csrf-token]').content;
-    const show = (m) => { err.textContent = m; err.classList.remove('hidden'); btn.disabled = false; };
-
-    btn.addEventListener('click', async () => {
-        btn.disabled = true; err.classList.add('hidden');
-        try {
-            const r = await fetch(btn.dataset.url, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
-            const d = await r.json();
-            if (d.paid) { return location.reload(); }
-            if (!r.ok) { return show(d.message || 'Payment could not be started.'); }
-            if (!d.redirect_url) { return show('Payment link is not available. Please try again.'); }
-            window.location.href = d.redirect_url;
-        } catch (e) { show('Network error. Please try again.'); }
-    });
-})();
-</script>
-@endif
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="{{ asset('js/ct-map.js') }}?v={{ filemtime(public_path('js/ct-map.js')) }}"></script>
 <script src="{{ asset('js/ct-live.js') }}?v={{ filemtime(public_path('js/ct-live.js')) }}"></script>

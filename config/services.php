@@ -19,7 +19,6 @@ return [
 
     'erp' => [
         'api_key' => env('ERP_API_KEY'),
-        'webhook_url' => env('ERP_WEBHOOK_URL'),
     ],
 
 ];

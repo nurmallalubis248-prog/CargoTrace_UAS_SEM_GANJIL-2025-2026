@@ -1,3 +1,5 @@
+NOTE: this output predates the removal of the payment gateway and the auto-shipping changes. Re-run `php artisan test` and replace this file before submitting.
+
 ﻿
    PASS  Tests\Unit\EtaServiceTest
   Γ£ô classify applies default thresholds with data set "early"       0.19s  

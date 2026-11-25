@@ -346,7 +346,7 @@ class SimulationService
 
         $target = $cum[$nearest] + $total * $stepPercent / 100;
         if ($target >= $total - 1) {
-            $text = self::autoDeliver() ? 'Arrived at destination.' : 'Arrived at destination. Waiting for payment and confirmation.';
+            $text = self::autoDeliver() ? 'Arrived at destination.' : 'Arrived at destination. Waiting for the customer to confirm receipt.';
 
             return $this->status($shipment, $actor, ShipmentStatus::ARRIVED, $shipment->destination, $text);
         }

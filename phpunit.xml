@@ -26,6 +26,7 @@
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="LOG_CHANNEL" value="null"/>
+        <env name="CARGOTRACE_SIMULATION" value="false"/>
         <env name="CARGOTRACE_DELAY_LOW_MAX_HOURS" value="6"/>
         <env name="CARGOTRACE_DELAY_MEDIUM_MAX_HOURS" value="24"/>
     </php>

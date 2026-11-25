@@ -1,6 +1,6 @@
 @php
-    // Pembayaran online (Midtrans) sudah dihapus. Kartu ini hanya menampilkan tarif kargo, status pengiriman,
-    // tombol konfirmasi terima (mode manual), dan struk untuk pembayaran lama yang sudah PAID.
+    // No payment gateway. This card shows the freight fee, the delivery status, the "Confirm received" button
+    // (manual mode) and the PDF receipt for payment records that are PAID.
     $paid = $shipment->payments->firstWhere('status', 'PAID');
     $amount = \App\Http\Controllers\Web\PaymentController::amountFor($shipment);
     $fmt = fn ($v) => 'Rp '.number_format($v, 0, ',', '.');

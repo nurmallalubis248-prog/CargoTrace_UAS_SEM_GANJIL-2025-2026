@@ -16,6 +16,10 @@ erDiagram
     users ||--o{ notifications : "receives"
     shipments ||--o{ notifications : "about"
     users ||--o{ audit_logs : "actor"
+    warehouses |o--o{ shipments : "optional warehouse_id"
+    locations |o--o{ warehouses : "optional location_id"
+    shipments ||--o{ payments : "fee records"
+    users ||--o{ payments : "user_id"
 ```
 
 ## Cardinality and design decisions
@@ -29,6 +33,8 @@ erDiagram
 | shipment -> shipment_exceptions | 1 : N | A shipment can have several exceptions over time, each with its own lifecycle (OPEN -> INVESTIGATING -> RESOLVED). |
 | shipment -> shipment_items | 1 : N | Cargo lines belonging to one shipment (cascade delete). |
 | user -> notifications | 1 : N | In-app inbox, filtered by `read_at`. |
+| shipment -> payments | 1 : N | Freight-fee records per shipment (ledger, receipts, payout status). Stored as data only; no gateway. |
+| warehouse -> shipments | 1 : N (optional) | A shipment may be assigned to a warehouse; `nullOnDelete` keeps the shipment if a warehouse is removed. |
 | user -> audit_logs | 1 : N (nullable) | Who did what; `null` user = system/seed. `nullOnDelete` keeps the log if a user is removed. |
 
 Other decisions

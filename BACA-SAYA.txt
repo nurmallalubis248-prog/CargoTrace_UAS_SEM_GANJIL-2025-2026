@@ -1,17 +1,6 @@
-Perjalanan pengiriman nyata (berdasarkan jam, tahan laptop mati & refresh)
+Hapus Peta Global + hilangkan tombol Hubungi Admin di kanan atas
 
-Timpa/tambahkan 17 file sesuai path (paket ini sudah mencakup paket "perbaikan-simulasi"), lalu di folder proyek:
-  php artisan config:clear
-  php artisan view:clear
-
-Periksa:
-  php artisan cargotrace:diagnose --selftest
-
-Cara kerja singkat:
-- Posisi pengiriman = fungsi dari JADWAL (berangkat -> tiba) dan JAM NYATA. Bukan animasi yang mulai dari awal.
-- Setiap halaman yang dibuka otomatis "mengejar jadwal" (maks. sekali per 15 detik), jadi walaupun
-  aplikasi/laptop mati lama, begitu dibuka lagi pengiriman sudah di posisi seharusnya, lengkap dengan riwayat.
-- scheduler (php artisan schedule:work / start-simulasi.bat) kini OPSIONAL; hanya membuat pembaruan tetap berjalan
-  saat tidak ada yang membuka aplikasi.
-- Peta memakai kecepatan Live (1x) secara bawaan; refresh tidak mengubah posisi.
-- Agar benar-benar berjalan 24 jam tanpa laptop: pasang di server online + cron "* * * * * php artisan schedule:run".
+1. Timpa 7 file sesuai path (routes, config, layout, show pengiriman, auth-pill, .env.example, ct-dict.js).
+2. Klik dua kali hapus-peta-global.bat dari folder proyek (menghapus file sisa + membersihkan cache).
+3. Hapus 4 baris di file .env kamu bila ada: CESIUM_ION_TOKEN, CESIUM_VERSION, GOOGLE_MAPS_API_KEY (tidak dipakai lagi).
+4. php artisan test

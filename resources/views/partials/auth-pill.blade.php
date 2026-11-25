@@ -27,7 +27,21 @@
         'chev' => '<path d="M6 9l6 6 6-6"/>',
         'login' => '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>',
         'truck' => '<path d="M1 6h13v10H1zM14 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+        'headset' => '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14h2.5a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4Zm16 0h-2.5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1H19a1 1 0 0 0 1-1v-4Z"/><path d="M18 19c0 1.5-1.5 2-4 2"/>',
+        'wa' => '<path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3Z"/><path d="M9 8.5c.3 2.6 2.4 4.9 5.5 6 .6-.2 1.3-.9 1.3-1.5l-1.6-.9-.8.7c-1-.4-2-1.4-2.4-2.4l.7-.8-.9-1.6c-.6 0-1.4.7-1.8 1.5Z"/>',
+        'phone' => '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>',
+        'ig' => '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r=".8" fill="currentColor"/>',
+        'mail' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
     ];
+    // "Hubungi Admin": nilai dari config/contact.php (.env: CONTACT_WHATSAPP, CONTACT_PHONE, CONTACT_INSTAGRAM, CONTACT_EMAIL). Kosong = saluran disembunyikan.
+    $ct = (array) config('contact');
+    $waNum = (string) ($ct['whatsapp'] ?? '');
+    $contactRows = array_values(array_filter([
+        $waNum !== '' ? ['wa', 'WhatsApp', '+'.$waNum, 'https://wa.me/'.$waNum.'?text='.rawurlencode((string) ($ct['whatsapp_text'] ?? '')), true] : null,
+        ! empty($ct['phone']) ? ['phone', 'Phone', (string) $ct['phone'], 'tel:'.preg_replace('/[^\d+]/', '', (string) $ct['phone']), false] : null,
+        ! empty($ct['instagram']) ? ['ig', 'Instagram', '@'.$ct['instagram'], 'https://instagram.com/'.rawurlencode((string) $ct['instagram']), true] : null,
+        ! empty($ct['email']) ? ['mail', 'Email', (string) $ct['email'], 'mailto:'.$ct['email'], false] : null,
+    ]));
     $svg = fn (string $n, int $s = 18) => '<svg width="'.$s.'" height="'.$s.'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$ico[$n].'</svg>';
 @endphp
 <style>
@@ -61,6 +75,14 @@
         font-size: 1.4rem; line-height: 1; color: #737B69; background: transparent; }
     .ct-modal-x:hover { background: #fdf2f5; color: #BF3F69; }
     .ct-modal-ic { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 9999px; background: #fbe4eb; color: #e11d74; }
+    .ct-contact-row { display: flex; align-items: center; gap: .85rem; padding: .7rem .8rem; border-radius: 1rem; border: 1px solid #fbe4eb; text-decoration: none; color: #2B3027; transition: background .15s, border-color .15s; }
+    .ct-contact-row + .ct-contact-row { margin-top: .6rem; }
+    .ct-contact-row:hover, .ct-contact-row:focus-visible { background: #fdf2f5; border-color: #f0a5bc; outline: none; }
+    .ct-contact-row .ci { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; flex: none; border-radius: 9999px; background: #fbe4eb; color: #e11d74; }
+    .ct-contact-row small { display: block; font-size: .7rem; font-weight: 700; color: #BF3F69; }
+    .ct-contact-row b { display: block; font-size: .95rem; font-weight: 700; word-break: break-word; }
+    .ct-help-link { display: inline-flex; align-items: center; gap: .4rem; padding: 0; border: 0; background: transparent; cursor: pointer; font-size: .8rem; font-weight: 700; color: #BF3F69; }
+    .ct-help-link:hover { text-decoration: underline; }
     @media (max-width: 639px) { .ct-pill { top: .75rem; right: .75rem; } .ct-pill-btn { padding: .55rem .7rem; } .ct-pill-label { display: none; } .ct-pill-login { padding: .5rem .9rem; } }
 </style>
 
@@ -122,12 +144,32 @@
             <label class="flex items-center gap-2 text-sm text-ink-600"><input type="checkbox" name="remember" value="1" class="rounded border-ink-300 text-matcha-600"> <span data-i18n="remember">Remember me</span></label>
             <button class="grad-brand w-full rounded-xl py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-90" type="submit" data-i18n="signin">Sign in</button>
         </form>
+        <p class="mt-4 text-center"><button type="button" class="ct-help-link" data-open-reg="contact">{!! $svg('headset', 16) !!}<span>Need help? Contact admin</span></button></p>
         @if(config('cargotrace.show_demo_accounts'))
             <div class="mt-5 rounded-xl border border-matcha-100 bg-matcha-50 p-4 text-xs text-ink-600">
                 <p class="mb-1 font-bold text-matcha-800"><span data-i18n="demo">Demo accounts</span> (password: <code>password</code>)</p>
                 <p>admin@cargotrace.test · operator@cargotrace.test · customer1@cargotrace.test</p>
             </div>
         @endif
+    </div>
+</div>
+
+{{-- Popup "Hubungi Admin" --}}
+<div id="reg-modal-contact" class="ct-modal" data-reg-modal hidden role="dialog" aria-modal="true" aria-labelledby="reg-title-contact">
+    <div class="ct-modal-backdrop" data-close-reg></div>
+    <div class="ct-modal-card">
+        <button type="button" class="ct-modal-x" data-close-reg aria-label="Close">&times;</button>
+        <div class="ct-modal-ic">{!! $svg('headset', 22) !!}</div>
+        <h3 id="reg-title-contact" class="mt-3 text-xl font-extrabold tracking-tight text-matcha-900">Contact admin</h3>
+        <p class="mb-4 mt-1 text-xs text-ink-500">Forgot your password, need an account or authorization code? Reach the admin through any channel below.</p>
+        @forelse($contactRows as [$cIcon, $cLabel, $cValue, $cHref, $cBlank])
+            <a class="ct-contact-row" href="{{ $cHref }}" @if($cBlank) target="_blank" rel="noopener noreferrer" @endif>
+                <span class="ci">{!! $svg($cIcon, 20) !!}</span>
+                <span><small>{{ $cLabel }}</small><b data-no-i18n>{{ $cValue }}</b></span>
+            </a>
+        @empty
+            <p class="rounded-xl border border-matcha-100 bg-matcha-50 p-4 text-sm text-ink-600">The admin contact has not been set up yet.</p>
+        @endforelse
     </div>
 </div>
 

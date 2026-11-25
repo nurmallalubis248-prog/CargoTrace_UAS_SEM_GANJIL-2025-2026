@@ -11,17 +11,15 @@ use Laravel\Sanctum\Sanctum;
 use Tests\Concerns\BuildsFixtures;
 use Tests\TestCase;
 
-/** ARRIVED -> PAID -> "Confirm received" -> DELIVERED, with notifications, receipt PDF and the live map. */
+/** ARRIVED -> "Confirm received" -> DELIVERED, with notifications, receipt PDF and the live map. */
 class DeliveryFlowTest extends TestCase
 {
     use RefreshDatabase, BuildsFixtures;
 
-    private const SERVER_KEY = 'SB-Mid-server-test-key';
-
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.midtrans.server_key' => self::SERVER_KEY, 'services.erp.webhook_url' => null]);
+        config(['cargotrace.simulation.enabled' => false]);
     }
 
     private function arrived(User $customer, User $operator): Shipment
@@ -56,7 +54,7 @@ class DeliveryFlowTest extends TestCase
         $this->assertNotNull($shipment->actual_arrival_at);
         $this->assertDatabaseHas('notifications', [
             'user_id' => $customer->id, 'shipment_id' => $shipment->id, 'type' => 'STATUS_CHANGED',
-            'message' => "Shipment {$shipment->shipment_number} has arrived. Please pay the freight, then confirm receipt.",
+            'message' => "Shipment {$shipment->shipment_number} has arrived. Please confirm receipt.",
         ]);
 
         Sanctum::actingAs($admin);
@@ -65,29 +63,13 @@ class DeliveryFlowTest extends TestCase
         $this->assertSame('ARRIVED', $position['status']);
     }
 
-    public function test_customer_cannot_confirm_receipt_before_paying(): void
-    {
-        $operator = $this->makeUser(User::ROLE_OPERATOR);
-        $customer = $this->makeUser(User::ROLE_CUSTOMER);
-        $shipment = $this->arrived($customer, $operator);
-        $this->payment($shipment, $customer, 'PENDING');
-
-        $this->actingAs($customer)->from("/shipments/{$shipment->id}")
-            ->post("/shipments/{$shipment->id}/confirm")
-            ->assertRedirect("/shipments/{$shipment->id}")
-            ->assertSessionHas('error');
-
-        $this->assertSame('ARRIVED', $shipment->fresh()->current_status->value);
-    }
-
-    public function test_customer_confirms_after_paying_and_the_cargo_stays_on_the_map(): void
+    public function test_customer_confirms_receipt_and_the_cargo_stays_on_the_map(): void
     {
         $operator = $this->makeUser(User::ROLE_OPERATOR);
         $admin = $this->makeUser(User::ROLE_ADMIN);
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
         $shipment = $this->arrived($customer, $operator);
         $arrival = $shipment->actual_arrival_at->getTimestamp();
-        $this->payment($shipment, $customer);
 
         $this->actingAs($customer)->post("/shipments/{$shipment->id}/confirm")
             ->assertRedirect(route('shipments.show', $shipment))
@@ -108,7 +90,6 @@ class DeliveryFlowTest extends TestCase
         $operator = $this->makeUser(User::ROLE_OPERATOR);
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
         $shipment = $this->arrived($customer, $operator);
-        $this->payment($shipment, $customer);
 
         $this->actingAs($this->makeUser(User::ROLE_CUSTOMER))->post("/shipments/{$shipment->id}/confirm")->assertForbidden();
         $this->actingAs($operator)->post("/shipments/{$shipment->id}/confirm")->assertForbidden();
@@ -116,25 +97,6 @@ class DeliveryFlowTest extends TestCase
         Sanctum::actingAs($operator);
         $this->postJson("/api/shipments/{$shipment->id}/tracking", ['event_type' => 'STATUS_UPDATE', 'status' => 'DELIVERED'])->assertStatus(422);
         $this->assertSame('ARRIVED', $shipment->fresh()->current_status->value);
-    }
-
-    public function test_a_paid_webhook_notifies_admins_and_customer_and_starts_as_pending_settlement(): void
-    {
-        $operator = $this->makeUser(User::ROLE_OPERATOR);
-        $admin = $this->makeUser(User::ROLE_ADMIN);
-        $customer = $this->makeUser(User::ROLE_CUSTOMER);
-        $shipment = $this->arrived($customer, $operator);
-        $payment = $this->payment($shipment, $customer, 'PENDING');
-
-        $n = ['order_id' => $payment->order_id, 'status_code' => '200', 'gross_amount' => '100000.00', 'transaction_status' => 'settlement', 'payment_type' => 'qris', 'fraud_status' => 'accept'];
-        $n['signature_key'] = hash('sha512', $n['order_id'].$n['status_code'].$n['gross_amount'].self::SERVER_KEY);
-        $this->postJson('/midtrans/notification', $n)->assertOk();
-
-        $payment->refresh();
-        $this->assertSame('PAID', $payment->status);
-        $this->assertSame('PENDING_SETTLEMENT', $payment->payout_status);
-        $this->assertDatabaseHas('notifications', ['user_id' => $admin->id, 'shipment_id' => $shipment->id, 'type' => 'PAYMENT_RECEIVED']);
-        $this->assertDatabaseHas('notifications', ['user_id' => $customer->id, 'shipment_id' => $shipment->id, 'type' => 'PAYMENT_CONFIRMED']);
     }
 
     public function test_receipt_pdf_rules(): void
