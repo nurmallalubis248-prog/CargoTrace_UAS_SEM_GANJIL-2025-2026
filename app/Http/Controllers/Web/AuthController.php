@@ -10,6 +10,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -62,12 +64,12 @@ class AuthController extends Controller
         $user->save();
         $request->session()->forget('register_failed');
 
-        event(new Registered($user)); // sends the verification email (MustVerifyEmail)
+        $mailFailed = $this->sendVerification($user); // sends the verification email (MustVerifyEmail)
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('verification.notice');
+        return redirect()->route('verification.notice')->with('mail_failed', $mailFailed);
     }
 
     /**
@@ -106,12 +108,12 @@ class AuthController extends Controller
 
         $audit->log($user, 'user.registered_staff', $user, ['role' => $user->role]);
 
-        event(new Registered($user)); // verification email, same flow as customers
+        $mailFailed = $this->sendVerification($user); // verification email, same flow as customers
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('verification.notice');
+        return redirect()->route('verification.notice')->with('mail_failed', $mailFailed);
     }
 
     /** "Check your email" page. Already verified users go straight to the dashboard. */
@@ -136,7 +138,13 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        try {
+            $request->user()->sendEmailVerificationNotification();
+        } catch (Throwable $e) {
+            Log::error('Verification email failed: '.$e->getMessage());
+
+            return back()->with('mail_failed', true);
+        }
 
         return back()->with('status', 'verification-link-sent');
     }
@@ -148,5 +156,19 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    /** Fires Registered (-> verification email). Returns true when the email could not be sent (e.g. SMTP error). */
+    private function sendVerification(User $user): bool
+    {
+        try {
+            event(new Registered($user));
+
+            return false;
+        } catch (Throwable $e) {
+            Log::error('Verification email failed: '.$e->getMessage());
+
+            return true;
+        }
     }
 }

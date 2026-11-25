@@ -39,8 +39,42 @@
       dragging: true, inertia: true, touchZoom: true, doubleClickZoom: true, boxZoom: true, keyboard: true, scrollWheelZoom: true,
       zoomControl: true
     }).setView(view || [15, 80], zoom || 3);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, noWrap: false,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(m);
+    // Dua peta dasar: Default (OpenStreetMap) dan Satelit (citra Esri + nama negara/kota/laut). Satelit jadi pilihan awal.
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, noWrap: false,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+    // Peta Satelit: coba beberapa penyedia citra satelit berurutan. Kalau satu diblokir/gagal, otomatis pindah ke berikutnya;
+    // kalau semua gagal baru jatuh ke peta Default (OSM).
+    const esri = (host) => [
+      L.tileLayer('https://' + host + '/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18,
+        attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics' }),
+      L.tileLayer('https://' + host + '/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18,
+        attribution: 'Labels &copy; Esri' })
+    ];
+    const PROVIDERS = [
+      () => esri('server.arcgisonline.com'),
+      () => esri('services.arcgisonline.com'),
+      () => [L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: '0123',
+        attribution: 'Imagery &copy; Google' })]   // lyrs=y = satelit + nama negara/kota
+    ];
+    const sat = L.layerGroup();
+    let provIdx = 0, fails = 0, loaded = 0;
+    function loadProvider() {
+      sat.clearLayers(); fails = 0; loaded = 0;
+      PROVIDERS[provIdx]().forEach((tl) => {
+        tl.on('tileload', () => { loaded++; });
+        tl.on('tileerror', () => {
+          fails++;
+          if (loaded === 0 && fails >= 4) {
+            provIdx++;
+            if (provIdx < PROVIDERS.length) { loadProvider(); }
+            else { if (m.hasLayer(sat)) { m.removeLayer(sat); osm.addTo(m); } }
+          }
+        });
+        sat.addLayer(tl);
+      });
+    }
+    sat.addTo(m);
+    loadProvider();
     // "Reset view" button: fit the world again after the user has wandered off.
     const Reset = L.Control.extend({ options: { position: 'topleft' }, onAdd: function () {
       const b = L.DomUtil.create('a', 'leaflet-bar leaflet-control'); b.href = '#'; b.title = 'Reset';
@@ -89,9 +123,9 @@
       L.polyline([[-85, lng], [85, lng]], { color: lng % 360 === 0 ? '#D85A82' : '#506E33', weight: lng % 360 === 0 ? 1.4 : 0.8, opacity: 0.6, dashArray: lng % 360 === 0 ? null : '4 6', interactive: false }).addTo(grid);
       lab(Math.abs(norm) + '°' + (norm === 0 || Math.abs(norm) === 180 ? '' : (norm > 0 ? 'E' : 'W')), [-78, lng]).addTo(grid);
     }
-    grid.addTo(m);
     const ov = {}; ov[CT.tx('Coordinate grid')] = grid;
-    L.control.layers(null, ov, { collapsed: true, position: 'topright' }).addTo(m);
+    const bases = {}; bases[CT.tx('Satellite')] = sat; bases[CT.tx('Default')] = osm;
+    L.control.layers(bases, ov, { collapsed: true, position: 'topright' }).addTo(m);
     // Live cursor coordinates.
     const Pos = L.Control.extend({ options: { position: 'bottomleft' }, onAdd: function () {
       const d = L.DomUtil.create('div'); d.style.cssText = 'background:rgba(255,255,255,.85);padding:2px 8px;border-radius:6px;font:600 11px Manrope,sans-serif;color:#26331A';
