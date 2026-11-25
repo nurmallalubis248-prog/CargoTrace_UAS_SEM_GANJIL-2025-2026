@@ -21,6 +21,7 @@
         'done'   => '<circle cx="12" cy="12" r="9"/><path class="acc" d="M8 12.5l2.7 2.7L16 9.5"/>',
         'check'  => '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
         'up'     => '<path d="M6 15l6-6 6 6"/>',
+        'headset' => '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14h2.5a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4Zm16 0h-2.5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1H19a1 1 0 0 0 1-1v-4Z"/><path d="M18 19c0 1.5-1.5 2-4 2"/>',
     ];
     $svg = fn (string $n, string $cls = '') => '<svg class="'.$cls.'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$ic[$n].'</svg>';
     $heroUrl = asset('images/login-hero.jpg').'?v='.filemtime(public_path('images/login-hero.jpg'));
@@ -193,6 +194,7 @@
         <div>
             <a class="lp-brand" href="#home" aria-label="CargoTrace">{!! $mark !!}<span>Cargo<b>Trace</b></span></a>
             <p class="lp-foot-about">Global shipment visibility and tracking for customers, logistics teams and administrators.</p>
+            <button type="button" class="lp-foot-contact" data-lp-open="contact">{!! $svg('headset') !!}<span data-i18n="Contact admin">Contact admin</span></button>
         </div>
         <div>
             <h4>Menu</h4>

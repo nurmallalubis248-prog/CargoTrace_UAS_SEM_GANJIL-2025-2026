@@ -151,7 +151,7 @@
             <p id="map-filter-empty" class="mb-2 hidden text-sm text-ink-500">Tidak ada pengiriman pada jalur ini.</p>
             <div id="map-box" class="relative">
                 <div id="map" class="h-[26rem] w-full rounded-2xl" data-no-i18n></div>
-                <div id="map-legend" aria-label="Legenda kondisi"><div><i style="background:#3FAE49"></i>Normal</div><div><i style="background:#F5A524"></i>Waspada (cuaca, METAR MVFR, kapal antre)</div><div><i style="background:#E5484D"></i>Gangguan (badai, METAR IFR, antrean padat)</div></div>
+                <div id="map-legend" aria-label="Legenda kondisi"><div><i style="background:#3FAE49"></i>Normal</div><div><i style="background:#F5A524"></i>Waspada (cuaca, METAR MVFR)</div><div><i style="background:#E5484D"></i>Gangguan (badai, METAR IFR, antrean padat)</div></div>
                 {{-- Tombol Perluas / Layar Penuh --}}
                 <button id="map-fs" type="button" title="Layar penuh" aria-label="Layar penuh" aria-pressed="false">
                     <svg class="ico-enter h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>
@@ -322,15 +322,14 @@
     const LV_TXT = ['Normal', 'Waspada', 'Gangguan'];
 
     // Ambang kepadatan pelabuhan: jumlah kapal BERLABUH (antre) dalam radius 30 km. Ubah sesuai ukuran pelabuhan.
-    const CONGEST_WARN = 8, CONGEST_BAD = 20;
     const FLT = { VFR: 0, MVFR: 1, IFR: 2, LIFR: 2 };
     const FLT_TXT = { VFR: 'VFR (cuaca baik)', MVFR: 'MVFR (jarak pandang menurun)', IFR: 'IFR (instrumen)', LIFR: 'LIFR (sangat rendah)' };
 
-    // Penilaian kondisi: cuaca/ombak (Open-Meteo) + METAR resmi (bandara) + kapal antre dari AIS (pelabuhan).
+    // Penilaian kondisi: cuaca/ombak (Open-Meteo) + METAR resmi (bandara).
     // Ini indikator operasional, bukan pengganti NOTAM / informasi resmi otoritas pelabuhan.
     function assess(loc, w, wave) {
-        const mt = COND.metar[loc.id], ais = loc.ais;
-        if (!w && !mt && !ais) { return { lv: 0, why: ['Data cuaca belum tersedia'], unknown: true }; }
+        const mt = COND.metar[loc.id];
+        if (!w && !mt) { return { lv: 0, why: ['Data cuaca belum tersedia'], unknown: true }; }
         let lv = 0; const why = [];
         const up = (l, t) => { if (l > lv) { lv = l; } why.push(t); };
         const air = loc.type === 'AIRPORT';
@@ -344,9 +343,6 @@
             if (!air && wave != null) { if (wave >= 4) { up(2, 'Ombak ' + wave.toFixed(1) + ' m'); } else if (wave >= 2.5) { up(1, 'Ombak ' + wave.toFixed(1) + ' m'); } }
         }
         if (air && mt && mt.cat && FLT[mt.cat] !== undefined && FLT[mt.cat] > 0) { up(FLT[mt.cat], 'METAR ' + mt.cat); }
-        if (!air && ais) {
-            if (ais.anchored >= CONGEST_BAD) { up(2, ais.anchored + ' kapal antre'); } else if (ais.anchored >= CONGEST_WARN) { up(1, ais.anchored + ' kapal antre'); }
-        }
         return { lv: lv, why: why };
     }
 
@@ -366,13 +362,6 @@
             const mw = []; if (mt.wind_kmh != null) { mw.push('angin ' + mt.wind_kmh + (mt.gust_kmh ? '–' + mt.gust_kmh : '') + ' km/j'); } if (mt.visib != null) { mw.push('visibilitas ' + esc(mt.visib) + ' mi'); } if (mt.wx) { mw.push(esc(mt.wx)); }
             if (mw.length) { rows.push(['', mw.join(' · ')]); }
             if (mt.raw) { rows.push(['Mentah', '<code style="font-size:10px;word-break:break-all">' + esc(mt.raw) + '</code>']); }
-        }
-        if (loc.type === 'PORT') {
-            if (loc.ais) {
-                rows.push(['Kapal antre (berlabuh)', '<b>' + loc.ais.anchored + '</b>']);
-                rows.push(['Tertambat / berlayar', loc.ais.moored + ' / ' + loc.ais.underway]);
-                rows.push(['Rata-rata menunggu', loc.ais.avg_wait_min == null ? '–' : (loc.ais.avg_wait_min >= 60 ? (loc.ais.avg_wait_min / 60).toFixed(1) + ' jam' : loc.ais.avg_wait_min + ' mnt') + ' <span style="color:#7a8270">(sejak dipantau)</span>']);
-            } else { rows.push(['Kapal antre', '<span style="color:#7a8270">belum ada data AIS</span>']); }
         }
         rows.push(['Pengiriman aktif', 'masuk ' + loc.active_in + ' · keluar ' + loc.active_out]);
         rows.push(['Terlambat / eksepsi', loc.delayed + ' / ' + loc.open_exceptions]);
@@ -395,8 +384,7 @@
         });
         const chip = (label, t) => '<span class="cond-chip">' + label + ' <span style="color:#3FAE49">● ' + t[0] + '</span> <span style="color:#F5A524">● ' + t[1] + '</span> <span style="color:#E5484D">● ' + t[2] + '</span></span>';
         $('cond-summary').innerHTML = chip('⚓ Pelabuhan', tally.PORT) + chip('✈ Bandara', tally.AIRPORT)
-            + (COND.locs.some((l) => l.ais) ? '<span class="cond-chip">🚢 Kapal antre: <b>' + COND.locs.reduce((n, l) => n + (l.ais ? l.ais.anchored : 0), 0) + '</b></span>' : '<span class="cond-chip" title="Jalankan scripts/ais-listener.js">🚢 AIS belum aktif</span>')
-            + '<span class="text-ink-500">Cuaca &amp; laut: Open-Meteo · METAR: NOAA · Kapal: AISStream' + (COND.updated ? ' · diperbarui ' + COND.updated : '') + '</span>';
+            + '<span class="text-ink-500">Cuaca &amp; laut: Open-Meteo · METAR: NOAA' + (COND.updated ? ' · diperbarui ' + COND.updated : '') + '</span>';
     }
 
     const OM = (u) => fetch(u).then((r) => { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); });

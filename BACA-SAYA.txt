@@ -1,6 +1,0 @@
-Hapus Peta Global + hilangkan tombol Hubungi Admin di kanan atas
-
-1. Timpa 7 file sesuai path (routes, config, layout, show pengiriman, auth-pill, .env.example, ct-dict.js).
-2. Klik dua kali hapus-peta-global.bat dari folder proyek (menghapus file sisa + membersihkan cache).
-3. Hapus 4 baris di file .env kamu bila ada: CESIUM_ION_TOKEN, CESIUM_VERSION, GOOGLE_MAPS_API_KEY (tidak dipakai lagi).
-4. php artisan test

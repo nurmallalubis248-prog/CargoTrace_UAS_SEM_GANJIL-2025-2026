@@ -139,13 +139,15 @@ Import `postman/CargoTrace.postman_collection.json` into Postman, run **Login**,
 | Other | `GET /dashboard`, `GET /shipments/{id}/weather`, `GET /geocode?q=`, `GET /notifications`, `POST /notifications/read-all` |
 | ERP | `GET /erp/shipments`, `GET /erp/payments` (header `X-ERP-KEY`) |
 
+List endpoints are paginated on the server (`data`, `links`, `meta`). `GET /shipments` accepts `q`, `status`, `carrier_id`, `origin_id`, `destination_id`, `date_from`/`date_to`, `delayed`, `sort` and `per_page` (max 50). `GET /carriers` accepts `q`, `transport_mode` and `per_page`; `GET /locations` accepts `q`, `type`, `country` and `per_page` (default 25, max 100 for both).
+
 Errors: `401` unauthenticated, `403` forbidden, `404` not found, `422` validation or business-rule violation (`{"message": "...", "errors": {...}}`), `429` rate limited. No stack traces are exposed.
 
 ## Web modules and access
 | Module | Menu | Access |
 |---|---|---|
 | Dashboard | Dasbor | all roles (customers see only their own shipments) |
-| Shipments (CRUD, tracking, exceptions, payment) | Pengiriman | per `ShipmentPolicy` |
+| Shipments (CRUD, tracking, exceptions, freight fee and receipt) | Pengiriman | per `ShipmentPolicy` |
 | Reports (+ PDF) | Laporan | all roles (customers see only their own shipments) |
 | Notifications | Notifikasi | all roles |
 | Carriers, Locations, Warehouses, Users | Pengangkut, Lokasi, Gudang, Pengguna | admin |

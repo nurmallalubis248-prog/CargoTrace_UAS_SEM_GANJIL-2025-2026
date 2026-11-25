@@ -174,17 +174,9 @@ class DashboardOverviewController extends Controller
             ->get(['id', 'origin_id', 'destination_id', 'is_delayed']);
         $openShip = DB::table('shipment_exceptions')->where('status', '!=', 'RESOLVED')->pluck('shipment_id')->flip();
 
-        // Kepadatan pelabuhan dari AIS (ditulis oleh scripts/ais-listener.js). Kosong jika listener belum jalan / data > 15 menit.
-        $ais = [];
-        $aisFile = storage_path('app/ais-ports.json');
-        if (is_file($aisFile) && time() - filemtime($aisFile) < 900) {
-            $j = json_decode((string) file_get_contents($aisFile), true);
-            $ais = $j['ports'] ?? [];
-        }
-
         $rows = DB::table('locations')->where('is_active', 1)->orderBy('type')->orderBy('name')
             ->get(['id', 'name', 'code', 'country', 'type', 'latitude', 'longitude'])
-            ->map(function ($l) use ($ships, $openShip, $ais) {
+            ->map(function ($l) use ($ships, $openShip) {
                 $in = $ships->where('destination_id', $l->id);
                 $out = $ships->where('origin_id', $l->id);
                 $all = $in->merge($out)->unique('id');
@@ -194,7 +186,6 @@ class DashboardOverviewController extends Controller
                     'active_in' => $in->count(), 'active_out' => $out->count(),
                     'delayed' => $all->where('is_delayed', 1)->count(),
                     'open_exceptions' => $all->filter(fn ($s) => isset($openShip[$s->id]))->count(),
-                    'ais' => $l->type === 'PORT' ? ($ais[$l->id] ?? null) : null,
                 ];
             })->values();
 

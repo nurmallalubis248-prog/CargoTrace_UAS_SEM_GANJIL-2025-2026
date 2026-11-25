@@ -174,3 +174,8 @@
     .lp-js .lp-reveal { opacity: 1; transform: none; transition: none; }
     .lp-float { animation: none; }
 }
+
+.lp-foot-contact { display: inline-flex; align-items: center; gap: .5rem; margin-top: 1.25rem; padding: .6rem 1.2rem; border: 0; border-radius: 9999px; cursor: pointer;
+    font: inherit; font-size: .85rem; font-weight: 700; color: #fff; background: linear-gradient(90deg, #e6458a, #f06aa5); box-shadow: 0 6px 16px -6px rgba(219,39,119,.6); transition: filter .2s, transform .2s; }
+.lp-foot-contact:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.lp-foot-contact svg { flex: none; width: 18px; height: 18px; }
