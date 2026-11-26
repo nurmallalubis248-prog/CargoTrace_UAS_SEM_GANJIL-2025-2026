@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\ShipmentStatus;
-use App\Models\Payment;
 use App\Models\Shipment;
 use App\Models\ShipmentException;
 use App\Models\User;
@@ -41,7 +40,6 @@ class ReportService
                 'delayed' => $delayed,
                 'open_exceptions' => ShipmentException::query()->open()->whereIn('shipment_id', $ids())->count(),
                 'delay_rate_pct' => $notCancelled ? round($delayed / $notCancelled * 100, 1) : 0.0,
-                'revenue' => (int) Payment::where('status', 'PAID')->whereIn('shipment_id', $ids())->sum('amount'),
             ],
         ];
     }

@@ -27,22 +27,11 @@ return [
     'reports' => [
         'title' => 'Laporan pengiriman', 'generated' => 'Dibuat', 'by' => 'oleh', 'filters' => 'Filter', 'none' => 'tidak ada',
         'total' => 'Total pengiriman', 'in_transit' => 'Dalam perjalanan', 'delivered' => 'Terkirim', 'delayed' => 'Terlambat',
-        'open_exceptions' => 'Eksepsi terbuka', 'delay_rate' => 'Tingkat keterlambatan', 'revenue' => 'Pendapatan diterima',
+        'open_exceptions' => 'Eksepsi terbuka', 'delay_rate' => 'Tingkat keterlambatan',
         'number' => 'Pengiriman', 'route' => 'Rute', 'carrier' => 'Pengangkut', 'status' => 'Status', 'eta' => 'Perkiraan tiba',
         'delay' => 'Keterlambatan', 'reason' => 'Alasan', 'on_time' => 'Tepat waktu', 'no_reason' => 'Alasan belum dicatat',
         'truncated' => 'Hanya :n pengiriman pertama yang ditampilkan.', 'empty' => 'Tidak ada pengiriman yang cocok dengan filter ini.',
         'page' => 'Halaman',
-    ],
-    'receipt' => [
-        'title' => 'Resi pembayaran', 'number' => 'No. resi', 'order' => 'ID pesanan', 'shipment' => 'Pengiriman', 'customer' => 'Pelanggan',
-        'route' => 'Rute', 'carrier' => 'Pengangkut', 'weight' => 'Berat', 'method' => 'Metode pembayaran', 'paid_at' => 'Dibayar pada',
-        'status' => 'Status', 'paid' => 'LUNAS', 'amount' => 'Total dibayar', 'note' => 'Resi ini dibuat secara elektronik oleh CargoTrace dan sah tanpa tanda tangan.',
-    ],
-    'finance' => [
-        'title' => 'Laporan keuangan', 'generated' => 'Dibuat', 'period' => 'Dibayar antara', 'all' => 'semua', 'received' => 'Pendapatan diterima',
-        'pending' => 'Menunggu pencairan', 'settled' => 'Sudah dicairkan', 'count' => 'Transaksi', 'by_method' => 'Pendapatan per metode pembayaran',
-        'method' => 'Metode', 'order' => 'ID pesanan', 'shipment' => 'Pengiriman', 'customer' => 'Pelanggan', 'amount' => 'Jumlah', 'paid_at' => 'Dibayar pada',
-        'payout' => 'Pencairan', 'empty' => 'Tidak ada transaksi lunas yang cocok dengan filter ini.', 'truncated' => 'Hanya :n transaksi pertama yang ditampilkan.',
     ],
     'roles' => ['admin' => 'Administrator', 'operator' => 'Operator Logistik', 'customer' => 'Pelanggan'],
     'common' => [

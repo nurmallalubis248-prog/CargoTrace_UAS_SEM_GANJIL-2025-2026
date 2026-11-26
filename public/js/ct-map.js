@@ -1,4 +1,4 @@
-/* CargoTrace map helpers: real-world OSM base map (country/city names), plane/truck/ship markers, mode-aware routes. */
+/* CargoTrace map helpers: OSM-based light base map (CARTO Voyager, city/country names), plane/truck/ship markers, mode-aware routes, permanent place labels. */
 (function () {
   window.CT = window.CT || {};
   const ICON = {
@@ -6,6 +6,20 @@
     ROAD: '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M1 5h13v10H1zM14 8h4l3 3v4h-7zM5.5 16.5a2 2 0 1 0 .01 0M17.5 16.5a2 2 0 1 0 .01 0"/></svg>',
     SEA: '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M3 15l2 5h14l2-5-9-3zM11 3h2v6h-2zM6 10l6-2 6 2v2l-6-2-6 2z"/></svg>'
   };
+
+  /* CSS untuk label nama tempat (disuntikkan otomatis, tidak perlu edit file CSS). */
+  (function injectLabelCss() {
+    if (document.getElementById('ct-label-css')) { return; }
+    const s = document.createElement('style');
+    s.id = 'ct-label-css';
+    s.textContent =
+      '.leaflet-tooltip.ct-label{background:#fff;border:1px solid #D85A82;border-radius:6px;' +
+      'font:600 11px Manrope,sans-serif;color:#26331A;padding:2px 6px;box-shadow:0 1px 3px rgba(0,0,0,.2);white-space:nowrap}' +
+      '.leaflet-tooltip-top.ct-label:before{border-top-color:#D85A82}' +
+      '.ct-zoomed-out .leaflet-tooltip.ct-label-veh{display:none}';
+    document.head.appendChild(s);
+  })();
+
   /* Mouse/pen panning implemented with pointer events. Leaflet's own drag is bypassed for the mouse (we cancel the
      compatibility mouse events); touch screens keep using Leaflet's drag + pinch. */
   CT.enablePan = function (m) {
@@ -39,42 +53,9 @@
       dragging: true, inertia: true, touchZoom: true, doubleClickZoom: true, boxZoom: true, keyboard: true, scrollWheelZoom: true,
       zoomControl: true
     }).setView(view || [15, 80], zoom || 3);
-    // Dua peta dasar: Default (OpenStreetMap) dan Satelit (citra Esri + nama negara/kota/laut). Satelit jadi pilihan awal.
-    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, noWrap: false,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
-    // Peta Satelit: coba beberapa penyedia citra satelit berurutan. Kalau satu diblokir/gagal, otomatis pindah ke berikutnya;
-    // kalau semua gagal baru jatuh ke peta Default (OSM).
-    const esri = (host) => [
-      L.tileLayer('https://' + host + '/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18,
-        attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics' }),
-      L.tileLayer('https://' + host + '/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18,
-        attribution: 'Labels &copy; Esri' })
-    ];
-    const PROVIDERS = [
-      () => esri('server.arcgisonline.com'),
-      () => esri('services.arcgisonline.com'),
-      () => [L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: '0123',
-        attribution: 'Imagery &copy; Google' })]   // lyrs=y = satelit + nama negara/kota
-    ];
-    const sat = L.layerGroup();
-    let provIdx = 0, fails = 0, loaded = 0;
-    function loadProvider() {
-      sat.clearLayers(); fails = 0; loaded = 0;
-      PROVIDERS[provIdx]().forEach((tl) => {
-        tl.on('tileload', () => { loaded++; });
-        tl.on('tileerror', () => {
-          fails++;
-          if (loaded === 0 && fails >= 4) {
-            provIdx++;
-            if (provIdx < PROVIDERS.length) { loadProvider(); }
-            else { if (m.hasLayer(sat)) { m.removeLayer(sat); osm.addTo(m); } }
-          }
-        });
-        sat.addLayer(tl);
-      });
-    }
-    sat.addTo(m);
-    loadProvider();
+    // OpenStreetMap standard tiles (no API key). Matches the brief: Leaflet + OpenStreetMap with attribution.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, noWrap: false,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(m);
     // "Reset view" button: fit the world again after the user has wandered off.
     const Reset = L.Control.extend({ options: { position: 'topleft' }, onAdd: function () {
       const b = L.DomUtil.create('a', 'leaflet-bar leaflet-control'); b.href = '#'; b.title = 'Reset';
@@ -123,15 +104,19 @@
       L.polyline([[-85, lng], [85, lng]], { color: lng % 360 === 0 ? '#D85A82' : '#506E33', weight: lng % 360 === 0 ? 1.4 : 0.8, opacity: 0.6, dashArray: lng % 360 === 0 ? null : '4 6', interactive: false }).addTo(grid);
       lab(Math.abs(norm) + '°' + (norm === 0 || Math.abs(norm) === 180 ? '' : (norm > 0 ? 'E' : 'W')), [-78, lng]).addTo(grid);
     }
+    // Grid koordinat dimatikan secara default (tidak ditambahkan ke peta). Untuk menampilkannya lagi: hapus tanda // di baris berikut.
+    // grid.addTo(m);
     const ov = {}; ov[CT.tx('Coordinate grid')] = grid;
-    const bases = {}; bases[CT.tx('Satellite')] = sat; bases[CT.tx('Default')] = osm;
-    L.control.layers(bases, ov, { collapsed: true, position: 'topright' }).addTo(m);
+    L.control.layers(null, ov, { collapsed: true, position: 'topright' }).addTo(m);
     // Live cursor coordinates.
     const Pos = L.Control.extend({ options: { position: 'bottomleft' }, onAdd: function () {
       const d = L.DomUtil.create('div'); d.style.cssText = 'background:rgba(255,255,255,.85);padding:2px 8px;border-radius:6px;font:600 11px Manrope,sans-serif;color:#26331A';
       let raf = 0; m.on('mousemove', (e) => { if (raf) { return; } const ll = e.latlng; raf = requestAnimationFrame(() => { raf = 0; const w = m.wrapLatLng(ll); d.textContent = w.lat.toFixed(4) + ', ' + w.lng.toFixed(4); }); }); return d; } });
     m.addControl(new Pos());
     CT.enablePan(m);
+    // Label kendaraan disembunyikan saat zoom jauh (< 4) supaya peta tidak penuh; label tujuan/asal tetap tampil.
+    const syncLabels = () => m.getContainer().classList.toggle('ct-zoomed-out', m.getZoom() < 4);
+    m.on('zoomend', syncLabels); syncLabels();
     m.getContainer().style.cursor = 'grab';
     setTimeout(() => m.invalidateSize(), 300); window.addEventListener('resize', () => m.invalidateSize()); window.addEventListener('load', () => m.invalidateSize()); // fixes grey/stuck map when the container size changes after load
     return m;
@@ -159,6 +144,17 @@
   CT.pin = function (latlng) {
     const svg = '<svg viewBox="0 0 24 32" width="30" height="40"><path fill="#D85A82" stroke="#fff" stroke-width="1.5" d="M12 1C6 1 2 5.5 2 11c0 7.5 10 20 10 20s10-12.5 10-20C22 5.5 18 1 12 1z"/><circle cx="12" cy="11" r="4" fill="#fff"/></svg>';
     return L.marker(latlng, { icon: L.divIcon({ className: '', html: svg, iconSize: [30, 40], iconAnchor: [15, 40], popupAnchor: [0, -36] }) });
+  };
+  /* Label nama tempat yang selalu terlihat di atas marker.
+     offsetY: pin = -38 (default), kendaraan (CT.vehicle) = -24. Teks di-escape agar aman dari XSS. */
+  CT.label = function (marker, text, offsetY, extraClass) {
+    const el = document.createElement('span');
+    el.textContent = text == null ? '' : String(text);
+    return marker.bindTooltip(el, {
+      permanent: true, direction: 'top',
+      offset: [0, typeof offsetY === 'number' ? offsetY : -38],
+      className: 'ct-label' + (extraClass ? ' ' + extraClass : '')
+    });
   };
   /* Curved flight path (quadratic arc) between two points. */
   CT.arc = function (a, b) {

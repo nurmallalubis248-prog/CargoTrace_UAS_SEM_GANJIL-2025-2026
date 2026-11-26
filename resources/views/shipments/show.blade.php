@@ -68,7 +68,7 @@
     </div>
 </div>
 
-@include('payments._card', ['shipment' => $shipment->loadMissing('payments')])
+@include('shipments._delivery', ['shipment' => $shipment])
 
 <div class="card mt-4">
     <h2 class="mb-2 font-semibold">Route map</h2>
@@ -239,8 +239,9 @@
     const bounds = [];
     const path = [[data.origin.lat, data.origin.lng]];
 
-    L.circleMarker([data.origin.lat, data.origin.lng], { radius: 9, color: '#26331A', fillColor: '#506E33', fillOpacity: 1 })
+    const originMk = L.circleMarker([data.origin.lat, data.origin.lng], { radius: 9, color: '#26331A', fillColor: '#506E33', fillOpacity: 1 })
         .bindPopup(popup(['Origin', data.origin.name])).addTo(map);
+    CT.label(originMk, data.origin.name, -10);   // nama asal
     bounds.push([data.origin.lat, data.origin.lng]);
 
     data.points.forEach((p) => {
@@ -252,7 +253,8 @@
         bounds.push([p.lat, p.lng]);
     });
 
-    CT.pin([data.destination.lat, data.destination.lng]).bindPopup(popup(['Destination', data.destination.name])).addTo(map);
+    const destMk = CT.pin([data.destination.lat, data.destination.lng]).bindPopup(popup(['Destination', data.destination.name])).addTo(map);
+    CT.label(destMk, data.destination.name, -38);   // nama tujuan
     bounds.push([data.destination.lat, data.destination.lng]);
 
     const here = path[path.length - 1], dest = [data.destination.lat, data.destination.lng];

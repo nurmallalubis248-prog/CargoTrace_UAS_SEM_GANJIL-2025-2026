@@ -36,7 +36,6 @@
         <td><div class="muted">{{ __('ui.reports.delayed') }}</div><div class="v">{{ $s['delayed'] }}</div></td>
         <td><div class="muted">{{ __('ui.reports.open_exceptions') }}</div><div class="v">{{ $s['open_exceptions'] }}</div></td>
         <td><div class="muted">{{ __('ui.reports.delay_rate') }}</div><div class="v">{{ $s['delay_rate_pct'] }}%</div></td>
-        <td><div class="muted">{{ __('ui.reports.revenue') }}</div><div class="v">Rp {{ number_format($s['revenue'], 0, ',', '.') }}</div></td>
     </tr>
 </table>
 

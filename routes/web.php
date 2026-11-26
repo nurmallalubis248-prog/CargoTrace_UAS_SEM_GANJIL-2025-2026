@@ -8,13 +8,11 @@ use App\Http\Controllers\Web\Admin\CarrierController;
 use App\Http\Controllers\Web\Admin\LocationController;
 use App\Http\Controllers\Web\Admin\UserController;
 use App\Http\Controllers\Web\Admin\WarehouseController;
-use App\Http\Controllers\Web\Admin\AccountingController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\ExceptionController;
 use App\Http\Controllers\Web\LanguageController;
 use App\Http\Controllers\Web\NotificationController;
-use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\ReportController;
 use App\Http\Controllers\Web\ShipmentController;
 use App\Http\Controllers\Web\TrackingController;
@@ -59,7 +57,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('shipments/{shipment}/weather', [ExternalApiController::class, 'weather'])->name('shipments.weather');
     Route::get('shipments/{shipment}/live', [ShipmentController::class, 'live'])->name('shipments.live');
 
-    Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
     Route::post('shipments/{shipment}/confirm', [ShipmentController::class, 'confirm'])->name('shipments.confirm');
 
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
@@ -95,11 +92,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('warehouses/{warehouse}/toggle', [WarehouseController::class, 'toggle'])->name('warehouses.toggle');
         Route::put('warehouses/{warehouse}', [WarehouseController::class, 'update'])->name('warehouses.update');
         Route::delete('warehouses/{warehouse}', [WarehouseController::class, 'destroy'])->name('warehouses.destroy');
-
-        Route::get('accounting', [AccountingController::class, 'index'])->name('accounting.index');
-        Route::get('accounting/export', [AccountingController::class, 'export'])->name('accounting.export');
-        Route::get('accounting/pdf', [AccountingController::class, 'pdf'])->middleware('throttle:10,1')->name('accounting.pdf');
-        Route::post('accounting/{payment}/settle', [AccountingController::class, 'settle'])->name('accounting.settle');
 
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit.index');
     });

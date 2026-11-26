@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Payment;
 use App\Models\Shipment;
 use App\Models\User;
 use App\Services\TrackingService;
@@ -11,7 +10,7 @@ use Laravel\Sanctum\Sanctum;
 use Tests\Concerns\BuildsFixtures;
 use Tests\TestCase;
 
-/** ARRIVED -> "Confirm received" -> DELIVERED, with notifications, receipt PDF and the live map. */
+/** ARRIVED -> "Confirm received" -> DELIVERED, with notifications and the live map. */
 class DeliveryFlowTest extends TestCase
 {
     use RefreshDatabase, BuildsFixtures;
@@ -28,11 +27,6 @@ class DeliveryFlowTest extends TestCase
         $s->forceFill(['current_status' => 'ARRIVED', 'actual_arrival_at' => now()->subHours(5)])->save();
 
         return $s->fresh();
-    }
-
-    private function payment(Shipment $s, User $customer, string $status = 'PAID'): Payment
-    {
-        return $s->payments()->create(['user_id' => $customer->id, 'order_id' => 'CT-FLOW-'.uniqid(), 'amount' => 100000, 'status' => $status, 'payment_type' => 'qris']);
     }
 
     public function test_arrival_records_the_arrival_time_notifies_the_customer_and_keeps_the_cargo_on_the_map(): void
@@ -97,44 +91,6 @@ class DeliveryFlowTest extends TestCase
         Sanctum::actingAs($operator);
         $this->postJson("/api/shipments/{$shipment->id}/tracking", ['event_type' => 'STATUS_UPDATE', 'status' => 'DELIVERED'])->assertStatus(422);
         $this->assertSame('ARRIVED', $shipment->fresh()->current_status->value);
-    }
-
-    public function test_receipt_pdf_rules(): void
-    {
-        $operator = $this->makeUser(User::ROLE_OPERATOR);
-        $customer = $this->makeUser(User::ROLE_CUSTOMER);
-        $paidShipment = $this->arrived($customer, $operator);
-        $paid = $this->payment($paidShipment, $customer);
-        $pending = $this->payment($this->arrived($customer, $operator), $customer, 'PENDING');
-
-        $this->actingAs($this->makeUser(User::ROLE_CUSTOMER))->get("/payments/{$paid->id}/receipt")->assertForbidden();
-        $this->actingAs($customer)->get("/payments/{$pending->id}/receipt")->assertNotFound();
-
-        $response = $this->actingAs($customer)->get("/payments/{$paid->id}/receipt");
-        if (! class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
-            $response->assertSessionHas('error');
-
-            return;
-        }
-        $response->assertOk()->assertHeader('content-type', 'application/pdf');
-        $this->assertStringStartsWith('%PDF', $response->getContent());
-    }
-
-    public function test_receipt_view_follows_the_selected_language(): void
-    {
-        $operator = $this->makeUser(User::ROLE_OPERATOR);
-        $customer = $this->makeUser(User::ROLE_CUSTOMER);
-        $payment = $this->payment($this->arrived($customer, $operator), $customer)->load('shipment.customer', 'shipment.origin', 'shipment.destination', 'shipment.carrier');
-
-        app()->setLocale('id');
-        $id = view('payments.receipt', ['payment' => $payment])->render();
-        app()->setLocale('en');
-        $en = view('payments.receipt', ['payment' => $payment])->render();
-
-        $this->assertStringContainsString('Resi pembayaran', $id);
-        $this->assertStringContainsString('LUNAS', $id);
-        $this->assertStringContainsString('Payment receipt', $en);
-        $this->assertStringContainsString('RCP-'.$payment->order_id, $en);
     }
 
     public function test_unread_counter_endpoint_feeds_the_live_badge(): void

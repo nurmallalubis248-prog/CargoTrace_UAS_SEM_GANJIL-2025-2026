@@ -70,8 +70,6 @@
         'SHIPMENT_DELAYED'   => ['Shipment', 'orange', 'warn', 'Shipment %s is delayed. Check the details.'],
         'EXCEPTION_OPENED'   => ['Exception', 'orange', 'warn', 'A new exception was reported on shipment %s.'],
         'EXCEPTION_RESOLVED' => ['Exception', 'green', 'check', 'The exception on shipment %s has been resolved.'],
-        'PAYMENT_RECEIVED'   => ['Payment', 'blue', 'doc', 'Payment for shipment %s was received from the customer.'],
-        'PAYMENT_CONFIRMED'  => ['Payment', 'blue', 'doc', 'Payment for shipment %s was confirmed.'],
     ];
     $tabs = [['all', 'All', 'bell'], ['unread', 'Unread', 'bell'], ['read', 'Read', 'check']];
 @endphp

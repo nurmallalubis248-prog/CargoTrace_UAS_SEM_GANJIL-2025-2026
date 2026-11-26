@@ -61,7 +61,7 @@ class DashboardService
         $positions = $base()
             ->whereIn('current_status', [
                 ShipmentStatus::BOOKED->value, ShipmentStatus::PICKED_UP->value, ShipmentStatus::IN_TRANSIT->value,
-                ShipmentStatus::ARRIVED->value,   // arrived but not yet paid + confirmed: stays on the map
+                ShipmentStatus::ARRIVED->value,   // arrived but delivery not yet recorded: stays on the map
                 ShipmentStatus::DELIVERED->value, // delivered shipments stay visible on the map
             ])
             ->whereNotNull('current_latitude')
@@ -76,6 +76,8 @@ class DashboardService
                 'mode' => $s->carrier->transport_mode ?? 'SEA',
                 'origin_country' => $s->origin?->country,
                 'dest_country' => $s->destination?->country,
+                'dest_name' => $s->destination?->name,
+                'origin_name' => $s->origin?->name,
                 'dest_lat' => $s->destination?->latitude,
                 'dest_lng' => $s->destination?->longitude,
                 'origin_lat' => $s->origin?->latitude,
@@ -205,10 +207,6 @@ class DashboardService
             'delayed_list' => $delayedList,
             'carrier_ids' => $carrierIds,
             'forecast' => app(ForecastService::class)->forecast($base()),
-            'payments' => [
-                'paid_amount' => (int) \App\Models\Payment::where('status', 'PAID')->whereIn('shipment_id', $base()->select('shipments.id'))->sum('amount'),
-                'pending' => \App\Models\Payment::where('status', 'PENDING')->whereIn('shipment_id', $base()->select('shipments.id'))->count(),
-            ],
             'totals' => [
                 'shipments' => $total,
                 'in_transit' => (int) ($byStatus[ShipmentStatus::IN_TRANSIT->value] ?? 0),

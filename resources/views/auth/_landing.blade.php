@@ -32,7 +32,7 @@
         ['clock',  'Automatic ETA & Delay Detection', 'Estimated arrival times are calculated automatically and delays are flagged the moment they happen.'],
         ['truck',  'Automatic Delivery',            'Shipments move on their own from booking to delivery, and every step is saved in the tracking history.'],
         ['plane',  'Air, Sea & Road Coverage',      'Plane, ship and truck routes in one place, each with its own icon on the map.'],
-        ['doc',    'Complete Reports',              'Download PDF reports and accounting exports whenever you need them.'],
+        ['doc',    'Complete Reports',              'Download PDF shipment reports whenever you need them.'],
         ['shield', 'Audit Trail & Role Access',     'Every action is logged, and admins, logistics staff and customers each see only what they need.'],
     ];
     $feat = [
@@ -40,7 +40,7 @@
         ['alert', 'Smart Delay Management',   'Report and resolve delays with clear reasons, and notify the right people automatically.'],
         ['doc',   'Complete Tracking History', 'Every position and status change is stored, so you can review the whole journey of each shipment.'],
     ];
-    $chips = ['7 languages', 'PDF reports', 'Audit logs', 'Weather info', 'Notifications', 'Accounting'];
+    $chips = ['7 languages', 'PDF reports', 'Audit logs', 'Weather info', 'Notifications'];
     $steps = [
         ['user', 'Create an account', 'Register as a customer in seconds and verify your email.'],
         ['box',  'Book a shipment',   'Enter the origin, destination, carrier and cargo details.'],

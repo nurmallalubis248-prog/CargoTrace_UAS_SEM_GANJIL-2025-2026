@@ -46,7 +46,6 @@
     .cond-pin { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9999px; background: #fff; border: 3px solid #3FAE49; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
     .cond-pin.lv1 { border-color: #F5A524; } .cond-pin.lv2 { border-color: #E5484D; animation: condPulse 1.6s infinite; }
     @keyframes condPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(229,72,77,.55); } 50% { box-shadow: 0 0 0 8px rgba(229,72,77,0); } }
-    .plane-pin svg { width: 18px; height: 18px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
     #map-legend { position: absolute; left: .6rem; bottom: 1.6rem; z-index: 500; background: rgba(255,255,255,.95); border-radius: .75rem; padding: .45rem .7rem; font-size: .7rem; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.18); line-height: 1.5; }
     #map-legend i { display: inline-block; width: .7rem; height: .7rem; border-radius: 9999px; margin-right: .35rem; vertical-align: -1px; }
     .cond-pop b { color: #2B3027; } .cond-pop table td { padding: 1px 8px 1px 0; vertical-align: top; }
@@ -143,7 +142,6 @@
                 <label class="lyr"><input type="checkbox" data-lyr="WAREHOUSE"> 🏭 Gudang</label>
                 <label class="lyr"><input type="checkbox" id="lyr-radar"> 🌧 Radar cuaca</label>
                 <label class="lyr"><input type="checkbox" id="lyr-sea"> ⚓ Peta laut</label>
-                <label class="lyr"><input type="checkbox" id="lyr-planes"> 🛩 Pesawat live</label>
                 <button type="button" id="cond-refresh" class="lyr" title="Muat ulang kondisi">⟳ Segarkan</button>
             </div>
             <div id="cond-summary" class="mb-2 flex flex-wrap items-center gap-2 text-xs"></div>
@@ -214,7 +212,7 @@
     const PINK = '#FF5FA2', GREEN = '#8CCB4F';
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const SHIP_URL = '{{ route('shipments.index') }}';
-    const URLS = { late24: '{{ route('shipments.index', ['delayed' => 1]) }}', exception: '{{ route('shipments.index', ['exception' => 'open']) }}', payout: '{{ auth()->user()->isAdmin() ? route('admin.accounting.index') : route('reports.index') }}' };
+    const URLS = { late24: '{{ route('shipments.index', ['delayed' => 1]) }}', exception: '{{ route('shipments.index', ['exception' => 'open']) }}' };
 
     /* ================= PETA ================= */
     const map = CT.baseMap('map', [15, 80], 3);
@@ -252,6 +250,7 @@
             const brg = dest ? CT.bearing(ll, dest) : 0;
             const isDone = p.status === 'DELIVERED';
             const m = CT.vehicle(p.mode, ll, p.delayed, brg, isDone ? 'done' : 'moving').bindPopup(popup(p));
+            if (p.label) { CT.label(m, p.label, -24, 'ct-label-veh'); }   // nama lokasi terakhir (tampil saat zoom >= 4)
             staticMk[p.id] = m;
             if (dest) {
                 specs[p.id] = { from: (p.origin_lat != null && p.origin_lng != null) ? [Number(p.origin_lat), Number(p.origin_lng)] : ll, here: ll, dest: dest,
@@ -262,7 +261,11 @@
             if (dest) {
                 CT.quickLine(overviewLayer, ll, dest, p.mode, Object.assign({}, CT.routeStyle(p.mode), { opacity: 0.55, weight: 2 }));
                 const key = dest[0].toFixed(3) + ',' + dest[1].toFixed(3);
-                if (!seenDest[key]) { seenDest[key] = true; CT.pin(dest).bindPopup(CT.tx('Destination') + ': ' + (p.dest_country || '')).addTo(overviewLayer); }
+                if (!seenDest[key]) {
+                    seenDest[key] = true;
+                    const pn = CT.pin(dest).bindPopup(CT.tx('Destination') + ': ' + (p.dest_name || p.dest_country || '')).addTo(overviewLayer);
+                    if (p.dest_name || p.dest_country) { CT.label(pn, p.dest_name || p.dest_country, -38); }   // nama tujuan
+                }
                 bounds.push(dest);
             }
         });
@@ -310,7 +313,7 @@
     })();
 
 
-    /* ================= KONDISI GLOBAL: pelabuhan, bandara, cuaca, radar, pesawat live ================= */
+    /* ================= KONDISI GLOBAL: pelabuhan, bandara, cuaca, radar ================= */
     map.setMinZoom(2);
     const condLayer = L.layerGroup().addTo(map);
     const COND = { locs: [], wx: {}, wave: {}, metar: {}, show: { PORT: true, AIRPORT: true, WAREHOUSE: false }, updated: null };
@@ -429,35 +432,6 @@
     const seaLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', { attribution: 'Seamarks © OpenSeaMap' });
     $('lyr-sea').addEventListener('change', (e) => { if (e.target.checked) { seaLayer.addTo(map); } else { map.removeLayer(seaLayer); } });
 
-    /* ---- Pesawat live (OpenSky Network, anonim: dibatasi kuota, jadi hanya saat dicentang & zoom >= 3) ---- */
-    const planeLayer = L.layerGroup();
-    let planeTimer = null, planeBusy = false;
-    const PLANE_SVG = (deg) => '<svg viewBox="0 0 24 24" style="transform:rotate(' + deg + 'deg)"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="#E91E8C" stroke="#fff" stroke-width="1"/></svg>';
-    async function loadPlanes() {
-        if (planeBusy) { return; }
-        if (map.getZoom() < 3) { planeLayer.clearLayers(); return; }
-        planeBusy = true;
-        try {
-            const b = map.getBounds();
-            const q = 'lamin=' + Math.max(-85, b.getSouth()).toFixed(2) + '&lomin=' + Math.max(-180, b.getWest()).toFixed(2) + '&lamax=' + Math.min(85, b.getNorth()).toFixed(2) + '&lomax=' + Math.min(180, b.getEast()).toFixed(2);
-            const j = await OM('https://opensky-network.org/api/states/all?' + q);
-            planeLayer.clearLayers();
-            (j.states || []).filter((s) => s[5] != null && s[6] != null && !s[8]).slice(0, 300).forEach((s) => {
-                const icon = L.divIcon({ className: 'plane-pin', html: PLANE_SVG(Math.round(s[10] || 0)), iconSize: [18, 18], iconAnchor: [9, 9] });
-                L.marker([s[6], s[5]], { icon: icon, interactive: true, zIndexOffset: -100 })
-                    .bindTooltip(esc((s[1] || s[0]).trim()) + ' · ' + esc(s[2]) + ' · ' + (s[7] != null ? Math.round(s[7] * 3.28084 / 100) * 100 + ' ft' : '-') + ' · ' + (s[9] != null ? Math.round(s[9] * 3.6) + ' km/j' : '-')).addTo(planeLayer);
-            });
-        } catch (err) { console.warn('OpenSky gagal', err); }
-        planeBusy = false;
-    }
-    $('lyr-planes').addEventListener('change', (e) => {
-        clearInterval(planeTimer);
-        if (e.target.checked) { planeLayer.addTo(map); loadPlanes(); planeTimer = setInterval(loadPlanes, 60000); }
-        else { map.removeLayer(planeLayer); planeLayer.clearLayers(); }
-    });
-    let planeDeb = null;
-    map.on('moveend', () => { if ($('lyr-planes').checked) { clearTimeout(planeDeb); planeDeb = setTimeout(loadPlanes, 1500); } });
-
     loadConditions().catch((e) => { console.warn('Kondisi lokasi gagal', e); });
 
     /* ================= KARTU & GRAFIK (data dari tabel SQL) ================= */
@@ -502,7 +476,7 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
                 scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: grid }, x: { grid: { display: false }, ticks: { maxTicksLimit: 6 } } } } });
         // Info Penting
-        const TXT = { late24: ['#FF5FA2', (n) => n + ' pengiriman terlambat > 24 jam'], exception: ['#3B82F6', (n) => n + ' exception masih terbuka'], payout: ['#F59E0B', (n) => n + ' pembayaran menunggu settlement'] };
+        const TXT = { late24: ['#FF5FA2', (n) => n + ' pengiriman terlambat > 24 jam'], exception: ['#3B82F6', (n) => n + ' exception masih terbuka'] };
         $('info-list').innerHTML = d.info.map((i) => '<li><a href="' + URLS[i.key] + '" class="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 hover:bg-white"><span class="h-2.5 w-2.5 flex-none rounded-full" style="background:' + TXT[i.key][0] + '"></span><span class="flex-1 font-semibold text-ink-800">' + esc(TXT[i.key][1](i.count)) + '</span><span class="text-ink-400">›</span></a></li>').join('');
         // Pengiriman Terbaru
         $('recent-body').innerHTML = d.recent.length ? d.recent.map((r) => '<tr><td class="td whitespace-nowrap text-xs"><a class="font-semibold hover:underline" href="' + esc(r.url) + '">' + esc(r.number) + '</a></td><td class="td text-xs">' + esc(r.route) + '</td><td class="td"><span class="pill pill-' + esc(r.tone) + '">' + esc(r.label) + '</span></td><td class="td whitespace-nowrap text-xs">' + esc(r.eta) + '</td></tr>').join('')

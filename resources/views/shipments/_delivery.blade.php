@@ -1,9 +1,5 @@
 @php
-    // No payment gateway. This card shows the freight fee, the delivery status, the "Confirm received" button
-    // (manual mode) and the PDF receipt for payment records that are PAID.
-    $paid = $shipment->payments->firstWhere('status', 'PAID');
-    $amount = \App\Http\Controllers\Web\PaymentController::amountFor($shipment);
-    $fmt = fn ($v) => 'Rp '.number_format($v, 0, ',', '.');
+    // Delivery card: shows the delivery status and, in manual mode, the "Confirm received" button for the customer.
     $isOwner = (int) auth()->id() === (int) $shipment->customer_id;
     $arrived = $shipment->current_status->value === 'ARRIVED';
     $delivered = $shipment->current_status->value === 'DELIVERED';
@@ -12,10 +8,8 @@
 <div class="card mt-4">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h2 class="font-semibold">Freight fee</h2>
-            <p class="mt-2 text-2xl font-extrabold text-matcha-900" data-idr="{{ $paid->amount ?? $amount }}">{{ $fmt($paid->amount ?? $amount) }}</p>
-            <p class="text-[11px] text-ink-400">Shown in IDR; other currencies are for reference (static rates).</p>
-            <p class="text-xs text-ink-500">{{ number_format($shipment->weight_kg, 0, ',', '.') }} kg &times; Rp {{ number_format(config('cargotrace.payment.rate_per_kg'), 0, ',', '.') }}/kg (min. {{ $fmt(config('cargotrace.payment.min_fee')) }})</p>
+            <h2 class="font-semibold">Delivery</h2>
+            <p class="mt-1 text-xs text-ink-500">Cargo: {{ number_format($shipment->weight_kg, 0, ',', '.') }} kg</p>
         </div>
         <div class="text-right">
             @if($delivered)
@@ -29,11 +23,6 @@
                 <p class="text-xs text-ink-500">Waiting for the customer to confirm receipt.</p>
             @else
                 <p class="text-sm text-ink-500">{{ $shipment->current_status->value === 'CANCELLED' ? 'This shipment was cancelled.' : 'On its way. Delivery is recorded automatically on arrival.' }}</p>
-            @endif
-            @if($paid)
-                <div class="mt-3">
-                    <a data-pdf-lang class="btn-light" href="{{ route('payments.receipt', $paid) }}">Download receipt (PDF)</a>
-                </div>
             @endif
         </div>
     </div>

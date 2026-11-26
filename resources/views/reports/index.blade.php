@@ -73,7 +73,6 @@
         ['Delayed', $s['delayed'], 'warn', 'green', $spark(fn ($r) => $r->is_delayed && $r->current_status->value !== 'CANCELLED')],
         ['Open exceptions', $s['open_exceptions'], 'alert', 'pink', $spark($openExc)],
         ['Delay rate', $s['delay_rate_pct'].'%', 'pct', 'green', ''],
-        ['Revenue received', null, 'card', 'pink', ''],
     ];
 @endphp
 
@@ -165,11 +164,7 @@
             <span class="rp-ico rp-{{ $tone }}"><svg fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $ic[$icon] }}"/>@if($icon === 'box')<path d="m7.5 5 9 5.2" stroke-width="1.2"/>@endif</svg></span>
             <div class="rp-body">
                 <p class="rp-lbl">{{ $label }}</p>
-                @if($icon === 'card')
-                    <p class="rp-val rp-val-money" data-idr="{{ $s['revenue'] }}">Rp {{ number_format($s['revenue'], 0, ',', '.') }}</p>
-                @else
-                    <p class="rp-val">{{ $value }}</p>
-                @endif
+                <p class="rp-val">{{ $value }}</p>
             </div>
             @if($pts)
                 <svg class="rp-spark" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="{{ $tone === 'green' ? '#6DB43A' : '#F0508F' }}" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round" points="{{ $pts }}"/></svg>

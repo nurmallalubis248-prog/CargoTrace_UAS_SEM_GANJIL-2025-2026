@@ -68,7 +68,7 @@ class TrackingService
             }
 
             if ($newStatus === ShipmentStatus::DELIVERED && ! $system) {
-                // Delivery = the customer confirmed receipt (an admin may do it on their behalf). Online payment was removed, so no PAID check.
+                // Delivery = the customer confirmed receipt (an admin may do it on their behalf).
                 if ((int) $actor->id !== (int) $shipment->customer_id && ! $actor->isAdmin()) {
                     throw new BusinessRuleException('Only the customer (or an admin) can confirm receipt of the cargo.');
                 }

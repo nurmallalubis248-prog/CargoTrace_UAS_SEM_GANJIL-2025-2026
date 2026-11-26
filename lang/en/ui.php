@@ -27,22 +27,11 @@ return [
     'reports' => [
         'title' => 'Shipment report', 'generated' => 'Generated', 'by' => 'by', 'filters' => 'Filters', 'none' => 'none',
         'total' => 'Total shipments', 'in_transit' => 'In transit', 'delivered' => 'Delivered', 'delayed' => 'Delayed',
-        'open_exceptions' => 'Open exceptions', 'delay_rate' => 'Delay rate', 'revenue' => 'Revenue received',
+        'open_exceptions' => 'Open exceptions', 'delay_rate' => 'Delay rate',
         'number' => 'Shipment', 'route' => 'Route', 'carrier' => 'Carrier', 'status' => 'Status', 'eta' => 'Expected arrival',
         'delay' => 'Delay', 'reason' => 'Reason', 'on_time' => 'On time', 'no_reason' => 'Reason not recorded',
         'truncated' => 'Only the first :n shipments are listed.', 'empty' => 'No shipments match these filters.',
         'page' => 'Page',
-    ],
-    'receipt' => [
-        'title' => 'Payment receipt', 'number' => 'Receipt no.', 'order' => 'Order ID', 'shipment' => 'Shipment', 'customer' => 'Customer',
-        'route' => 'Route', 'carrier' => 'Carrier', 'weight' => 'Weight', 'method' => 'Payment method', 'paid_at' => 'Paid at',
-        'status' => 'Status', 'paid' => 'PAID', 'amount' => 'Total paid', 'note' => 'This receipt was generated electronically by CargoTrace and is valid without a signature.',
-    ],
-    'finance' => [
-        'title' => 'Financial report', 'generated' => 'Generated', 'period' => 'Paid between', 'all' => 'all', 'received' => 'Revenue received',
-        'pending' => 'Pending settlement', 'settled' => 'Settled', 'count' => 'Transactions', 'by_method' => 'Revenue by payment method',
-        'method' => 'Method', 'order' => 'Order ID', 'shipment' => 'Shipment', 'customer' => 'Customer', 'amount' => 'Amount', 'paid_at' => 'Paid at',
-        'payout' => 'Payout', 'empty' => 'No paid transactions match these filters.', 'truncated' => 'Only the first :n transactions are listed.',
     ],
     'roles' => ['admin' => 'Administrator', 'operator' => 'Logistics Operator', 'customer' => 'Customer'],
     'common' => [

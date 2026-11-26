@@ -2,9 +2,9 @@
 -- Equivalent to the Laravel migrations in database/migrations/.
 -- Usage: select database `cargotrace` in phpMyAdmin, then Import this file.
 -- This ONE file creates ALL tables (users, carriers + transport mode, locations, warehouses, shipments, tracking, exceptions,
--- payments with payout/settlement status, notifications, audit logs) AND fills them with demo accounts and sample data.
+-- notifications, audit logs) AND fills them with demo accounts and sample data.
 -- Lifecycle supported: CREATED > BOOKED > PICKED_UP > IN_TRANSIT > ARRIVED > DELIVERED (status columns are VARCHAR, no enum to change).
--- It replaces the old patch files (update_xampp_phpmyadmin.sql, update_arrived_payout.sql): import ONLY this file.
+-- Import ONLY this file (it replaces any older patch files).
 -- Do NOT run "php artisan migrate" or "db:seed" after importing this file (use one way or the other, never both).
 
 SET NAMES utf8mb4;
@@ -14,7 +14,6 @@ CREATE DATABASE IF NOT EXISTS `cargotrace` CHARACTER SET utf8mb4 COLLATE utf8mb4
 USE `cargotrace`;
 
 -- Remove old CargoTrace tables first so the import never fails with 'table already exists'.
-DROP TABLE IF EXISTS `payments`;
 DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `shipment_exceptions`;
@@ -217,31 +216,6 @@ CREATE TABLE `shipment_exceptions` (
   CONSTRAINT `shipment_exceptions_reported_by_foreign` FOREIGN KEY (`reported_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ---------------------------------------------------------------- payments + payout status
-CREATE TABLE `payments` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `shipment_id` BIGINT UNSIGNED NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `order_id` VARCHAR(60) NOT NULL,
-  `amount` BIGINT UNSIGNED NOT NULL,                                   -- IDR
-  `status` VARCHAR(15) NOT NULL DEFAULT 'PENDING',                     -- PENDING | PAID | FAILED | EXPIRED | CANCELLED
-  `payout_status` VARCHAR(20) NOT NULL DEFAULT 'PENDING_SETTLEMENT',   -- PENDING_SETTLEMENT | SETTLED (money reached the bank account)
-  `payment_type` VARCHAR(30) NULL,                                     -- qris, bca_va, bni_va, bri_va, ...
-  `snap_token` VARCHAR(255) NULL,
-  `redirect_url` TEXT NULL,
-  `raw_notification` JSON NULL,
-  `paid_at` DATETIME NULL,
-  `settled_at` TIMESTAMP NULL DEFAULT NULL,
-  `created_at` TIMESTAMP NULL,
-  `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `payments_order_id_unique` (`order_id`),
-  KEY `payments_status_index` (`status`),
-  KEY `payments_payout_status_index` (`payout_status`),
-  CONSTRAINT `payments_shipment_id_foreign` FOREIGN KEY (`shipment_id`) REFERENCES `shipments` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `payments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- ---------------------------------------------------------------- notifications & audit
 CREATE TABLE `notifications` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -346,11 +320,6 @@ INSERT INTO `shipments` (`id`, `shipment_number`, `reference_number`, `customer_
   (11, 'CT261109-E8MTV', 'PO-30942', 4, 8, 21, 19, 2, 2, 'CONTAINER_LCL', 1800.0, NULL, DATE_ADD(@now, INTERVAL 172800 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), NULL, 'BOOKED', -7.2575, 112.7521, 'Surabaya (Warehouse)', DATE_ADD(@now, INTERVAL -97200 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -108000 SECOND), DATE_ADD(@now, INTERVAL -97200 SECOND)),
   (12, 'CT261109-P2ZUC', 'PO-71584', 3, 9, 18, 16, NULL, 2, 'GENERAL', 850.0, NULL, DATE_ADD(@now, INTERVAL -7200 SECOND), DATE_ADD(@now, INTERVAL 3600 SECOND), DATE_ADD(@now, INTERVAL 3600 SECOND), NULL, 'IN_TRANSIT', -2.5, 105.2, 'Over the Java Sea', DATE_ADD(@now, INTERVAL -3600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -50400 SECOND), DATE_ADD(@now, INTERVAL -3600 SECOND)),
   (13, 'CT261109-J3QXB', 'PO-57236', 3, 2, 3, 4, NULL, 2, 'LIQUID', 21000.0, NULL, DATE_ADD(@now, INTERVAL 777600 SECOND), DATE_ADD(@now, INTERVAL 2160000 SECOND), DATE_ADD(@now, INTERVAL 2160000 SECOND), NULL, 'CREATED', NULL, NULL, NULL, DATE_ADD(@now, INTERVAL -21600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -21600 SECOND), DATE_ADD(@now, INTERVAL -21600 SECOND));
-
--- payments untuk 2 pengiriman DELIVERED (jumlah = berat_kg x Rp 5.000/kg): total Rp 211.904.000 = USD 13,244.00 pada kurs Rp 16.000/USD
-INSERT INTO `payments` (`id`, `shipment_id`, `user_id`, `order_id`, `amount`, `status`, `payout_status`, `payment_type`, `paid_at`, `settled_at`, `created_at`, `updated_at`) VALUES
-  (1, 1, 3, 'CT-1-DEMO-001', 56904000, 'PAID', 'PENDING_SETTLEMENT', 'qris', DATE_ADD(@now, INTERVAL -2577600 SECOND), NULL, DATE_ADD(@now, INTERVAL -2577600 SECOND), DATE_ADD(@now, INTERVAL -2577600 SECOND)),
-  (2, 2, 4, 'CT-2-DEMO-001', 155000000, 'PAID', 'SETTLED', 'bca_va', DATE_ADD(@now, INTERVAL -1558800 SECOND), DATE_ADD(@now, INTERVAL -1386000 SECOND), DATE_ADD(@now, INTERVAL -1558800 SECOND), DATE_ADD(@now, INTERVAL -1386000 SECOND));
 
 -- shipment_items
 INSERT INTO `shipment_items` (`id`, `shipment_id`, `description`, `quantity`, `weight_kg`, `volume_cbm`, `created_at`, `updated_at`) VALUES

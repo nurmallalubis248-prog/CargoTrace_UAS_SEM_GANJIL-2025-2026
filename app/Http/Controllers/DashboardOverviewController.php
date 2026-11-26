@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * Data kartu/grafik dashboard. SEMUA angka diambil dari tabel di cargotrace_schema.sql
- * (shipments, locations, carriers, shipment_exceptions, payments, notifications, audit_logs).
+ * (shipments, locations, carriers, shipment_exceptions, notifications, audit_logs).
  * Tidak ada data tambahan/rekaan. Pelanggan (customer) hanya melihat miliknya sendiri.
  */
 class DashboardOverviewController extends Controller
@@ -102,12 +102,9 @@ class DashboardOverviewController extends Controller
         $openExc = DB::table('shipment_exceptions as e')->join('shipments as s', 's.id', '=', 'e.shipment_id')
             ->whereNull('s.deleted_at')->where('e.status', '!=', 'RESOLVED')
             ->when($isCustomer, fn ($qq) => $qq->where('s.customer_id', $user->id))->count();
-        $pendPay = DB::table('payments')->where('status', 'PAID')->where('payout_status', 'PENDING_SETTLEMENT')
-            ->when($isCustomer, fn ($qq) => $qq->where('user_id', $user->id))->count();
         $info = [
             ['key' => 'late24',   'count' => $all->where('is_delayed', 1)->filter(fn ($r) => (float) $r->delay_hours > 24)->count()],
             ['key' => 'exception','count' => $openExc],
-            ['key' => 'payout',   'count' => $pendPay],
         ];
 
         // ---- Pengiriman Terbaru (5 terakhir dibuat)

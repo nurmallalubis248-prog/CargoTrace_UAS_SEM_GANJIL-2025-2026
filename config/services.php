@@ -17,8 +17,4 @@ return [
         'user_agent' => env('GEOCODING_USER_AGENT', 'CargoTrace-UAS/1.0'),
     ],
 
-    'erp' => [
-        'api_key' => env('ERP_API_KEY'),
-    ],
-
 ];

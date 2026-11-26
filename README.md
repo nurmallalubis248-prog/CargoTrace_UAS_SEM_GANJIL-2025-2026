@@ -1,12 +1,12 @@
 # CargoTrace — Global Shipment Visibility & Tracking Platform
 
-Web Programming 2 · Final Project (UAS). A Laravel application that lets logistics companies and their customers follow shipments across the world: lifecycle, tracking timeline, live map, ETA/delay detection, delay forecast, exception management, payments, accounting, warehouses, dashboard, multi-language UI and a REST API.
+Web Programming 2 · Final Project (UAS). A Laravel application that lets logistics companies and their customers follow shipments across the world: lifecycle, tracking timeline, live map, ETA/delay detection, delay forecast, exception management, warehouses, dashboard, multi-language UI and a REST API.
 
 > **Repository:** https://github.com/nurmallalubis248-prog/CargoTrace_UAS_SEM_GANJIL-2025-2026
 > **Live demo:** _TODO before submission: deploy following [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and replace this line with the public URL_ (demo accounts are listed below)
 
 ## Problem and solution
-Shipment information is scattered, customers cannot see the latest status, delays and exceptions are invisible, and operators have no place to prioritise follow-ups. CargoTrace centralises shipments, carriers, locations, warehouses and tracking events, shows the journey on a map and timeline, flags and forecasts delays with deterministic rules, lets operators manage exceptions, and lets customers pay the freight online once the cargo has arrived, confirm receipt and download a PDF receipt.
+Shipment information is scattered, customers cannot see the latest status, delays and exceptions are invisible, and operators have no place to prioritise follow-ups. CargoTrace centralises shipments, carriers, locations, warehouses and tracking events, shows the journey on a map and timeline, flags and forecasts delays with deterministic rules, lets operators manage exceptions, and lets customers follow their cargo and confirm receipt once it has arrived.
 
 ## Features
 
@@ -14,8 +14,8 @@ Shipment information is scattered, customers cannot see the latest status, delay
 - **Roles:** Administrator, Logistics Operator, Customer. Authorization is enforced on the server (policies + route middleware) for every page and API endpoint.
 - **Shipment CRUD** (create, list, detail, edit, delete) with search, filter, sort and server-side pagination by number/reference, status, carrier, origin, destination, date range and delay.
 - **Shipment lifecycle** with a validated state machine: `CREATED -> BOOKED -> PICKED_UP -> IN_TRANSIT -> ARRIVED -> DELIVERED` (`CANCELLED` from CREATED/BOOKED). Terminal states cannot be reopened.
-  - `ARRIVED`: the cargo reached the destination. The arrival time is stored then (the delay is computed from it), the marker **stays on the live map** and the freight invoice opens.
-  - `DELIVERED`: manual confirmation when the customer presses **Confirm received** (an admin may do it on the customer's behalf; operators cannot). In auto-shipping demo mode (`CARGOTRACE_SIMULATION_AUTO_DELIVER=true`, the default) the server records `DELIVERED` itself on arrival;  Then the cargo leaves the active map. Details: [`docs/PAYMENT_FLOW.md`](docs/PAYMENT_FLOW.md).
+  - `ARRIVED`: the cargo reached the destination. The arrival time is stored then (the delay is computed from it), the marker **stays on the live map** until delivery is recorded.
+  - `DELIVERED`: manual confirmation when the customer presses **Confirm received** (an admin may do it on the customer's behalf; operators cannot). In auto-shipping demo mode (`CARGOTRACE_SIMULATION_AUTO_DELIVER=true`, the default) the server records `DELIVERED` itself on arrival;  Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - **Tracking events** (append-only history), chronological timeline, normal vs. exception events, current location from the latest valid event. An event cannot be in the future or earlier than the latest event.
 - **Cargo types:** general, container (FCL/LCL), bulk, refrigerated, liquid, hazardous.
 
@@ -27,33 +27,25 @@ Shipment information is scattered, customers cannot see the latest status, delay
 - CUSTOMS_HOLD, WEATHER_DELAY, PORT_CONGESTION, DAMAGED, MISROUTED, DOCUMENTATION_ISSUE; severity; `OPEN -> INVESTIGATING -> RESOLVED`; detection and resolution time stored.
 
 ### Dashboard (Chart.js + Fetch)
-- Totals, in transit, delivered, delayed, open exceptions, delay rate, exception rate, on-time delivery rate, average delay and average exception resolution time, revenue received, shipments by status / carrier, delays by severity, forecast table — all computed from the database.
+- Totals, in transit, delivered, delayed, open exceptions, delay rate, exception rate, on-time delivery rate, average delay and average exception resolution time, shipments by status / carrier, delays by severity, forecast table — all computed from the database.
 - **Live map** (Leaflet + OpenStreetMap) with plane / truck / ship markers, destination pin, latitude/longitude grid and cursor coordinates; drag with the mouse, zoom with the wheel.
 - **Live route** (shipment page, and on the dashboard for the selected shipment): road shipments follow **real roads** (OSRM), sea/air use great-circle estimates; the part already travelled is drawn solid, the rest faded; the vehicle keeps moving toward the ETA with a "remaining km" label, a speed selector (Live / x60 / x600 / x6000 simulation) and a "show vehicle" button. The position between two scans is an **estimate**, not GPS.
 - Cards and charts are **clickable** (they open the filtered shipment list) and a table lists delayed shipments with their **reason**.
-- Live clock and calendar that follow the selected country's time zone.
+- Live clock that follows the selected country's time zone.
 
 ### Master data and administration (admin)
 - **Carriers** (with transport mode AIR / ROAD / SEA), **Locations** (geocoding via Nominatim), **Warehouses** (code, location, capacity) and **Users** (create, change role). Carriers, locations and warehouses can be activated / deactivated.
-- **Accounting:** payment ledger, revenue / pending / failed totals, monthly revenue, **payout (settlement) status** (`PENDING_SETTLEMENT` / `SETTLED`, admin button "Mark settled"), **CSV export** and a **PDF financial report** (filters: paid from/to, payout status).
-- **Audit log** (actor, action, time, entity) and in-app **notifications**. The sidebar badge refreshes every 15 s; admins are notified when a payment is received and when the customer confirms receipt, customers when their cargo arrives and when their payment is confirmed.
+- **Audit log** (actor, action, time, entity) and in-app **notifications**. The sidebar badge refreshes every 15 s; admins are notified when the customer confirms receipt, and customers when their cargo arrives.
 
 ### Email verification
 - Self-registered customers must verify their email (link sent by SMTP, e.g. Gmail App Password) before using the app. Demo accounts and users created by an admin are pre-verified. Configure `MAIL_*` in `.env`.
 
-### Freight fee, receipts and accounting
-- Freight fee = weight x `CARGOTRACE_RATE_PER_KG` (default Rp 5.000), at least `CARGOTRACE_MIN_FEE` (default Rp 50.000), shown on the shipment page in IDR and in the selected display currency.
-- **No online payment gateway** (not required by the brief). Payments are records in the `payments` table (seeded demo data); the app does not process money.
-- For a `PAID` payment the customer and staff can **download a PDF receipt**. Admins see the payment ledger in **Accounting** (revenue / pending / failed totals, monthly revenue, payout status `PENDING_SETTLEMENT` / `SETTLED`, PDF and CSV export).
-- Confirming receipt (`DELIVERED`) is not tied to payment.
-
 ### Auto-shipping demo mode (moving cargo)
 Set `CARGOTRACE_SIMULATION=true`. By default (`CARGOTRACE_SIMULATION_MODE=time`) a shipment's position follows its schedule (departure -> arrival) and the real clock: `BOOKED` shortly after creation, then `PICKED_UP`, `IN_TRANSIT`, `ARRIVED` and `DELIVERED`. Every page request catches the shipment up to where it should be, and `php artisan schedule:work` (optional) keeps it moving when nobody is browsing. Each step is a **real tracking event** (same rules, notifications and audit log as an operator; descriptions start with \"[Simulation]\"). `CARGOTRACE_SIMULATION_TIME_SCALE` speeds the clock up for demos. The old mode (`CARGOTRACE_SIMULATION_MODE=step`) advances N % per run: `php artisan cargotrace:simulate --mode=step --step=25`. Real deployments post positions with `POST /api/shipments/{id}/tracking`.
 
-### Language, currency and PWA
+### Language and PWA
 - **Languages (whole app, all roles):** Indonesian, English, Chinese, Japanese, Spanish, French, Arabic (RTL). Dictionary: `public/js/ct-dict.js`; engine: `public/js/ct-i18n.js`.
 - **Country selector:** picks a country, switches the language and filters the dashboard map.
-- **Display currency:** IDR, USD, EUR, CNY, JPY, SGD, MYR, SAR (static approximate rates in `config/cargotrace.php`).
 - **PWA:** installable ("Pasang aplikasi" button), `public/sw.js` service worker, `public/manifest.webmanifest`.
 
 ### External APIs (Laravel HTTP Client)
@@ -104,11 +96,9 @@ php artisan migrate:fresh --seed
 | `DB_*` | MySQL connection (default `cargotrace`, user `root`, empty password) |
 | `SESSION_DRIVER`, `CACHE_STORE` | `file` by default, no extra tables needed |
 | `CARGOTRACE_DELAY_LOW_MAX_HOURS` / `..._MEDIUM_MAX_HOURS` | Delay thresholds (6 / 24 hours) |
-| `CARGOTRACE_RATE_PER_KG`, `CARGOTRACE_MIN_FEE` | Freight fee rule (IDR) |
 | `SHOW_DEMO_ACCOUNTS` | Show demo accounts on the login page |
 | `EXTERNAL_API_TIMEOUT`, `WEATHER_BASE_URL`, `GEOCODING_BASE_URL`, `GEOCODING_USER_AGENT` | External API settings (set your own contact in the Nominatim user agent) |
 | `CARGOTRACE_SIMULATION`, `CARGOTRACE_SIMULATION_MODE`, `CARGOTRACE_SIMULATION_TIME_SCALE`, `CARGOTRACE_SIMULATION_AUTO_DELIVER` | Auto-shipping demo mode (default off; `time` mode follows the clock, `AUTO_DELIVER` records DELIVERED on arrival) |
-| `ERP_API_KEY` | ERP integration key (empty = `/api/erp/*` disabled; generate a random value on every deployment) |
 
 ### Changing the delay thresholds (per-group scenario)
 The delay rule lives in `App\Services\EtaService` and reads its limits from `config/cargotrace.php`, which reads `.env`. No code change is needed:
@@ -137,7 +127,6 @@ Import `postman/CargoTrace.postman_collection.json` into Postman, run **Login**,
 | Exceptions | `GET/POST /shipments/{id}/exceptions`, `PATCH /exceptions/{id}` |
 | Master data | `GET/POST /carriers`, `GET/POST /locations` (POST admin only), `GET /customers` |
 | Other | `GET /dashboard`, `GET /shipments/{id}/weather`, `GET /geocode?q=`, `GET /notifications`, `POST /notifications/read-all` |
-| ERP | `GET /erp/shipments`, `GET /erp/payments` (header `X-ERP-KEY`) |
 
 List endpoints are paginated on the server (`data`, `links`, `meta`). `GET /shipments` accepts `q`, `status`, `carrier_id`, `origin_id`, `destination_id`, `date_from`/`date_to`, `delayed`, `sort` and `per_page` (max 50). `GET /carriers` accepts `q`, `transport_mode` and `per_page`; `GET /locations` accepts `q`, `type`, `country` and `per_page` (default 25, max 100 for both).
 
@@ -147,36 +136,35 @@ Errors: `401` unauthenticated, `403` forbidden, `404` not found, `422` validatio
 | Module | Menu | Access |
 |---|---|---|
 | Dashboard | Dasbor | all roles (customers see only their own shipments) |
-| Shipments (CRUD, tracking, exceptions, freight fee and receipt) | Pengiriman | per `ShipmentPolicy` |
+| Shipments (CRUD, tracking, exceptions, delivery confirmation) | Pengiriman | per `ShipmentPolicy` |
 | Reports (+ PDF) | Laporan | all roles (customers see only their own shipments) |
 | Notifications | Notifikasi | all roles |
 | Carriers, Locations, Warehouses, Users | Pengangkut, Lokasi, Gudang, Pengguna | admin |
-| Accounting (ledger, payout status, CSV + PDF export) | Akuntansi | admin |
 | Audit log | Log audit | admin |
 
 ## Tests
 ```bash
 php artisan test
 ```
-Tests use an in-memory SQLite database (see `phpunit.xml`), so they never touch your MySQL data. They cover: authentication, shipment API (CRUD, validation, authorization), tracking events and invalid status transitions, ETA/delay rule (unit + flow), exceptions, external API success/error/timeout/empty responses, dashboard scoping, locale handling, reports (PDF), delay reasons, freight fee calculation and payment receipts, the ERP API, the ARRIVED -> confirmed flow with notifications, the finance report and the demo simulator. The latest run is saved in `docs/test-evidence.txt`. CI: `.github/workflows/tests.yml` runs the suite on every push.
+Tests use an in-memory SQLite database (see `phpunit.xml`), so they never touch your MySQL data. They cover: authentication, shipment API (CRUD, validation, authorization), tracking events and invalid status transitions, ETA/delay rule (unit + flow), exceptions, external API success/error/timeout/empty responses, dashboard scoping, locale handling, reports (PDF), delay reasons, the ARRIVED -> confirmed flow with notifications and the demo simulator. The latest run is saved in `docs/test-evidence.txt`. CI: `.github/workflows/tests.yml` runs the suite on every push.
 
 ## Security
-Password hashing (bcrypt) · auth middleware and server-side authorization (policies, role middleware) · Form Request validation · CSRF tokens on web forms · Blade escaping (XSS) and DOM `textContent` for map popups · Eloquent/query-builder bindings and whitelisted sort columns (SQL injection) · `$fillable` mass-assignment protection (`role` is never mass-assignable) · rate limiting on login, geocoding and API · delivery can only be confirmed by the owner (or an admin), enforced in `TrackingService` · receipts only for PAID payments of shipments the user may view · ERP endpoints protected by `X-ERP-KEY` · `.env` and API keys are git-ignored.
+Password hashing (bcrypt) · auth middleware and server-side authorization (policies, role middleware) · Form Request validation · CSRF tokens on web forms · Blade escaping (XSS) and DOM `textContent` for map popups · Eloquent/query-builder bindings and whitelisted sort columns (SQL injection) · `$fillable` mass-assignment protection (`role` is never mass-assignable) · rate limiting on login, geocoding and API · delivery can only be confirmed by the owner (or an admin), enforced in `TrackingService` · `.env` and API keys are git-ignored.
 
 ## Deployment
 1. Provision PHP 8.2+, MySQL, Composer (shared hosting with SSH, VPS, or PaaS).
 2. Point the web root to `public/`.
 3. `composer install --no-dev --optimize-autoloader`, create `.env` with `APP_ENV=production`, `APP_DEBUG=false`, the real `APP_URL`, DB credentials, and `SHOW_DEMO_ACCOUNTS=true` only for the demo.
-4. `php artisan key:generate && php artisan migrate --seed --force` (includes the payout columns migration)
+4. `php artisan key:generate && php artisan migrate --seed --force` (the last migration drops the legacy `payments` table if an older database still has it)
 5. Make `storage/` and `bootstrap/cache/` writable. Optionally `php artisan config:cache route:cache`.
-6. Set `GEOCODING_USER_AGENT` to your own contact and replace the ERP demo key.
+6. Set `GEOCODING_USER_AGENT` to your own contact.
 7. The service worker needs HTTPS (or localhost).
 
 ## Troubleshooting
-- **Dashboard cards show "–", the clock does not move, or the map is stuck.** The browser may be serving old JavaScript from the service worker cache. Open DevTools > Application > Service workers > Unregister, then Storage > Clear site data, and reload with Ctrl+F5. When you edit files in `public/js`, bump `CACHE` in `public/sw.js` (currently `cargotrace-v3`).
+- **Dashboard cards show "–", the clock does not move, or the map is stuck.** The browser may be serving old JavaScript from the service worker cache. Open DevTools > Application > Service workers > Unregister, then Storage > Clear site data, and reload with Ctrl+F5. When you edit files in `public/js`, bump `CACHE` in `public/sw.js` (currently `cargotrace-v4`).
 - **`Table 'users' already exists` on migrate.** Do not mix the SQL import files with `php artisan migrate`. Run `php artisan migrate:fresh --seed`.
 - **The map can be zoomed but not dragged.** Unregister the service worker and hard-reload (see the first item). If it persists, run `document.elementFromPoint(...)` at the map centre in the console to find an element covering the map.
-- **Receipt / report PDF buttons show "PDF engine is not installed".** Run `composer install` (the package is `barryvdh/laravel-dompdf`).
+- **Report PDF buttons show "PDF engine is not installed".** Run `composer install` (the package is `barryvdh/laravel-dompdf`).
 - **Map or charts do not load.** Leaflet, Chart.js and Tailwind are loaded from public CDNs (unpkg, jsDelivr), so an internet connection is required.
 
 ## Documentation
@@ -186,16 +174,19 @@ Password hashing (bcrypt) · auth middleware and server-side authorization (poli
 - `docs/CODE_GUIDE_ID.md` — code guide (Indonesian)
 - `docs/DEPLOYMENT.md` — step-by-step deployment and pre-submission checklist
 - `docs/ACCEPTANCE_CHECKLIST.md` — each requirement of the UAS brief mapped to its implementation and tests
-- `docs/PAYMENT_FLOW.md` — cargo lifecycle, payment, confirmation, receipts and finance flow
 - `postman/` — API collection
+
+## Scope: the UAS brief and what goes beyond it
+Everything required by the brief is implemented and mapped one by one in [`docs/ACCEPTANCE_CHECKLIST.md`](docs/ACCEPTANCE_CHECKLIST.md): roles, shipment lifecycle, tracking timeline, ETA/delay rule with configurable thresholds, exceptions, Leaflet map, external API (Open-Meteo, Nominatim), dashboard, search/filter/pagination, notifications, audit log, REST API with Sanctum, tests, Postman collection and documentation.
+
+Extras that are **not required** by the brief and are documented as such: warehouses (master data), the statistical delay forecast, auto-shipping demo mode, e-mail verification, 7-language UI, PWA and PDF reports. Payments, payment gateways and accounting were removed because the brief puts financial transactions out of scope.
 
 ## Known limitations and future work
 - Tailwind, Leaflet and Chart.js are loaded from CDNs for simplicity; a production build with Vite would remove the runtime dependency.
 - No direct integration with real carriers, customs or port systems; no real-time GPS (out of scope). Positions come from tracking events (operators, an API client or the demo simulator); between two events the vehicle position on the map is an estimate toward the ETA. Demo positions are synthetic.
 - Road routes use the **public OSRM demo server** (internet required, best-effort, cached in the browser); sea and air routes are great-circle estimates, not real shipping lanes or flight paths.
-- No payment gateway: payments are recorded data, not processed transactions. Payout (settlement) status is recorded manually by an admin.
+- Payments, invoicing and accounting are out of scope of the brief and are **not implemented** (the app never handles money).
 - Admin notifications are polled every 15 s (no WebSocket push).
-- Display currency rates are static approximations.
 - Reopening a DELIVERED/CANCELLED shipment is not implemented.
 - Carriers, locations, warehouses and users have create and activate/deactivate, but no edit or delete screens.
 - E-mail notifications and Docker are not included.

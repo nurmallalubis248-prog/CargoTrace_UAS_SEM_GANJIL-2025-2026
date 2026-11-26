@@ -51,7 +51,7 @@
         $verb = strtolower(substr(strrchr('.'.$action, '.'), 1));
         return match (true) {
             in_array($verb, ['created', 'registered_staff', 'opened'], true) => 'add',
-            in_array($verb, ['updated', 'role_changed', 'toggled', 'settled'], true) => 'upd',
+            in_array($verb, ['updated', 'role_changed', 'toggled'], true) => 'upd',
             in_array($verb, ['added'], true) => 'trk',
             in_array($verb, ['deleted'], true) => 'del',
             default => 'oth',

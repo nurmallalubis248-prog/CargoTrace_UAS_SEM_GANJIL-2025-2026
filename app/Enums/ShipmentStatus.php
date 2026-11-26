@@ -5,9 +5,9 @@ namespace App\Enums;
 /**
  * Shipment lifecycle state machine.
  * CREATED -> BOOKED -> PICKED_UP -> IN_TRANSIT -> ARRIVED -> DELIVERED
- * ARRIVED: the cargo reached the destination; it stays on the live map and the freight invoice is due.
+ * ARRIVED: the cargo reached the destination; it stays on the live map until delivery is recorded.
  * DELIVERED: delivered to the destination. With auto-delivery (SimulationService) this happens by itself on arrival;
- * in manual mode it needs the customer to pay and confirm receipt.
+ * in manual mode the customer confirms receipt.
  * CANCELLED is only reachable from CREATED / BOOKED. DELIVERED and CANCELLED are terminal.
  */
 enum ShipmentStatus: string
@@ -38,11 +38,7 @@ enum ShipmentStatus: string
         return in_array($next, $this->allowedNext(), true);
     }
 
-    /**
-     * The freight can be paid at any stage except CANCELLED. DELIVERED is included because auto-delivery
-     * (SimulationService) no longer waits for payment, so an unpaid invoice must stay payable afterwards.
-     * In manual mode, confirming receipt still needs ARRIVED + PAID.
-     */
+    /** DELIVERED and CANCELLED are terminal: no further transition is allowed. */
     public function isTerminal(): bool
     {
         return $this->allowedNext() === [];

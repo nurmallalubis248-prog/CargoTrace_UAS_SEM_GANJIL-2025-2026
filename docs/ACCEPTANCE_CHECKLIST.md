@@ -41,4 +41,4 @@ Maps the requirements of the "CargoTrace UAS Final Project Brief" (slides 2-24) 
 | Docker | advanced / optional, not included |
 
 ## Out of scope in the brief (slide 4)
-No real carrier/customs integration, no real financial transactions (there is **no payment gateway**; the freight fee and payment records are demo data), no real GPS device tracking, no mandatory ML. The auto-shipping demo mode generates tracking events from the schedule and is a demonstration feature, not real tracking.
+No real carrier/customs integration, no payments or financial transactions (payments, payment gateways and accounting are **not implemented**), no real GPS device tracking, no mandatory ML. The auto-shipping demo mode generates tracking events from the schedule and is a demonstration feature, not real tracking.

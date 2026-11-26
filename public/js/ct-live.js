@@ -132,7 +132,7 @@
         const b = CT.bearing(cur.p, pts[Math.min(pts.length - 1, cur.i + 3)]), el = veh.getElement(), sp = el && el.querySelector('span');
         if (sp) { sp.style.transform = s.mode === 'AIR' ? 'rotate(' + b + 'deg)' : 'scaleX(' + (b > 180 ? -1 : 1) + ')'; }
         const km = Math.max(0, (1 - p) * total / 1000);
-        const txt = s.arrived ? CT.tx('Arrived') + ' \u00b7 ' + CT.tx('waiting for payment')
+        const txt = s.arrived ? CT.tx('Arrived') + ' \u00b7 ' + CT.tx('waiting for confirmation')
             : (s.done ? CT.tx('Delivered') : CT.tx('In transit')) + ' \u00b7 ' + (km >= 10 ? Math.round(km) : km.toFixed(1)) + ' km ' + CT.tx('remaining') + (res.real ? '' : ' (' + CT.tx('estimate') + ')');
         if (txt !== lastTxt) { veh.setTooltipContent(txt); lastTxt = txt; }
       };

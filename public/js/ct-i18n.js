@@ -11,7 +11,7 @@
       loginTitle:'Sign in to your account', loginSub:'Track every shipment, anywhere in the world.', email:'Email', password:'Password', remember:'Remember me',
       signin:'Sign in', noAccount:'No account?', register:'Register as customer', demo:'Demo accounts', tagline:'Global shipment visibility & tracking',
       f1:'Live world map with sea, air & road routes', f2:'Automatic ETA & delay detection', f3:'Exception management & audit trail',
-      country:'Country', allCountries:'All countries', language:'Language', revenue:'Revenue received', origin:'Origin', destination:'Destination', loadErr:'Could not load dashboard data. Please refresh the page.', noPos:'No active shipments with a known position.' },
+      country:'Country', allCountries:'All countries', language:'Language', origin:'Origin', destination:'Destination', loadErr:'Could not load dashboard data. Please refresh the page.', noPos:'No active shipments with a known position.' },
     id: { dashboard:'Dasbor', shipments:'Pengiriman', carriers:'Pengangkut', locations:'Lokasi', users:'Pengguna', audit:'Log audit',
       notifications:'Notifikasi', newShipment:'Pengiriman baru', logout:'Keluar', menu:'Menu utama', admin:'Administrasi',
       total:'Total pengiriman', transit:'Dalam perjalanan', delivered:'Terkirim', delayed:'Terlambat', exceptions:'Eksepsi terbuka', delayRate:'Tingkat keterlambatan', reports:'Laporan',
@@ -22,7 +22,7 @@
       loginTitle:'Masuk ke akun Anda', loginSub:'Lacak setiap pengiriman di seluruh dunia.', email:'Email', password:'Kata sandi', remember:'Ingat saya',
       signin:'Masuk', noAccount:'Belum punya akun?', register:'Daftar sebagai pelanggan', demo:'Akun demo', tagline:'Visibilitas & pelacakan pengiriman global',
       f1:'Peta dunia langsung dengan rute laut, udara & darat', f2:'Deteksi ETA & keterlambatan otomatis', f3:'Manajemen eksepsi & jejak audit',
-      country:'Negara', allCountries:'Semua negara', language:'Bahasa', revenue:'Pendapatan diterima', origin:'Asal', destination:'Tujuan', loadErr:'Data dasbor gagal dimuat. Silakan muat ulang halaman.', noPos:'Tidak ada pengiriman aktif dengan posisi yang diketahui.' },
+      country:'Negara', allCountries:'Semua negara', language:'Bahasa', origin:'Asal', destination:'Tujuan', loadErr:'Data dasbor gagal dimuat. Silakan muat ulang halaman.', noPos:'Tidak ada pengiriman aktif dengan posisi yang diketahui.' },
     zh: {"dashboard": "仪表板", "shipments": "货运", "carriers": "承运商", "locations": "地点", "users": "用户", "audit": "审计日志", "notifications": "通知", "newShipment": "新建货运", "logout": "退出登录", "menu": "主菜单", "admin": "管理", "total": "货运总数", "transit": "运输中", "delivered": "已送达", "delayed": "已延误", "exceptions": "未处理异常", "delayRate": "延误率", "excRate": "异常率", "onTime": "准时送达率", "avg": "平均延误 · 平均异常处理时间", "byStatus": "按状态统计", "byCarrier": "按承运商统计", "bySeverity": "按严重程度统计的延误", "liveMap": "实时货运地图", "liveMapSub": "海运、空运和公路运输——最新已知位置", "clock": "当地时间", "calendar": "日历", "yourShip": "您的货运", "allShip": "全部货运", "welcome": "欢迎回来", "modeSea": "海运", "modeAir": "空运", "modeRoad": "公路", "loginTitle": "登录您的账户", "loginSub": "随时随地追踪每一票货物。", "email": "电子邮箱", "password": "密码", "remember": "记住我", "signin": "登录", "noAccount": "没有账户？", "register": "注册为客户", "demo": "演示账户", "tagline": "全球货运可视化与追踪", "f1": "实时世界地图，含海运、空运与公路路线", "f2": "自动预计到达时间与延误检测", "f3": "异常管理与审计追踪", "revenue": "已收款项", "origin": "起点", "destination": "终点", "country": "国家/地区", "allCountries": "所有国家/地区", "language": "语言"},
     ja: {"dashboard": "ダッシュボード", "shipments": "貨物", "carriers": "運送会社", "locations": "拠点", "users": "ユーザー", "audit": "監査ログ", "notifications": "通知", "newShipment": "新規貨物", "logout": "ログアウト", "menu": "メインメニュー", "admin": "管理", "total": "貨物総数", "transit": "輸送中", "delivered": "配達済み", "delayed": "遅延", "exceptions": "未解決の例外", "delayRate": "遅延率", "excRate": "例外率", "onTime": "定時配達率", "avg": "平均遅延 · 平均例外解決時間", "byStatus": "ステータス別", "byCarrier": "運送会社別", "bySeverity": "重大度別の遅延", "liveMap": "リアルタイム貨物マップ", "liveMapSub": "海上・航空・陸上輸送の最新位置", "clock": "現地時間", "calendar": "カレンダー", "yourShip": "あなたの貨物", "allShip": "すべての貨物", "welcome": "おかえりなさい", "modeSea": "海上", "modeAir": "航空", "modeRoad": "陸上", "loginTitle": "アカウントにログイン", "loginSub": "世界中のすべての貨物を追跡。", "email": "メール", "password": "パスワード", "remember": "ログイン状態を保持", "signin": "ログイン", "noAccount": "アカウントをお持ちでない方", "register": "顧客として登録", "demo": "デモアカウント", "tagline": "グローバル貨物の可視化と追跡", "f1": "海・空・陸のルートを表示するライブ世界地図", "f2": "ETAと遅延の自動検出", "f3": "例外管理と監査証跡", "revenue": "入金額", "origin": "出発地", "destination": "目的地", "country": "国・地域", "allCountries": "すべての国・地域", "language": "言語"},
     es: {"dashboard": "Panel", "shipments": "Envíos", "carriers": "Transportistas", "locations": "Ubicaciones", "users": "Usuarios", "audit": "Registro de auditoría", "notifications": "Notificaciones", "newShipment": "Nuevo envío", "logout": "Cerrar sesión", "menu": "Menú principal", "admin": "Administración", "total": "Envíos totales", "transit": "En tránsito", "delivered": "Entregados", "delayed": "Retrasados", "exceptions": "Excepciones abiertas", "delayRate": "Tasa de retraso", "excRate": "Tasa de excepciones", "onTime": "Entregas a tiempo", "avg": "Retraso medio · Resolución media de excepciones", "byStatus": "Envíos por estado", "byCarrier": "Envíos por transportista", "bySeverity": "Retrasos por gravedad", "liveMap": "Mapa de envíos en vivo", "liveMapSub": "Marítimo, aéreo y terrestre: última posición conocida", "clock": "Hora local", "calendar": "Calendario", "yourShip": "Sus envíos", "allShip": "Todos los envíos", "welcome": "Bienvenido de nuevo", "modeSea": "Mar", "modeAir": "Aire", "modeRoad": "Tierra", "loginTitle": "Inicie sesión en su cuenta", "loginSub": "Siga cada envío, en cualquier parte del mundo.", "email": "Correo electrónico", "password": "Contraseña", "remember": "Recordarme", "signin": "Iniciar sesión", "noAccount": "¿No tiene cuenta?", "register": "Registrarse como cliente", "demo": "Cuentas de demostración", "tagline": "Visibilidad y seguimiento global de envíos", "f1": "Mapa mundial en vivo con rutas marítimas, aéreas y terrestres", "f2": "Detección automática de ETA y retrasos", "f3": "Gestión de excepciones y auditoría", "revenue": "Ingresos recibidos", "origin": "Origen", "destination": "Destino", "country": "País", "allCountries": "Todos los países", "language": "Idioma"},
@@ -89,7 +89,7 @@
     const l = get();
     const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => {
       const p = n.parentElement;
-      return (!p || SKIP[p.tagName] || p.closest('[data-i18n],[data-no-i18n],[data-idr]')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+      return (!p || SKIP[p.tagName] || p.closest('[data-i18n],[data-no-i18n]')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
     const nodes = []; while (tw.nextNode()) { nodes.push(tw.currentNode); }
     nodes.forEach((n) => {
       if (n.__o === undefined) { if (!n.nodeValue.trim()) { return; } n.__o = n.nodeValue; n.__l = n.nodeValue; }
@@ -125,19 +125,6 @@
     }
     obs.observe(document.body, OPTS);
   }
-  /* ---- Currency (display only; payments are charged in IDR) ---- */
-  const curCode = () => { const c = load('ct_cur'); return (window.CT.currencies && window.CT.currencies[c]) ? c : 'IDR'; };
-  function money(idr) {
-    const code = curCode(), cfg = (window.CT.currencies || {})[code] || { rate: 1, locale: 'id-ID' };
-    try { return new Intl.NumberFormat(cfg.locale, { style: 'currency', currency: code, maximumFractionDigits: (code === 'IDR' || code === 'JPY') ? 0 : 2 }).format(idr * cfg.rate); }
-    catch (e) { return 'Rp ' + Math.round(idr).toLocaleString('id-ID'); }
-  }
-  function refreshMoney() {
-    document.querySelectorAll('[data-idr]').forEach((el) => { el.textContent = money(Number(el.dataset.idr)); });
-    const cs = document.getElementById('cur-sel');
-    if (cs) { if (!cs.options.length) { Object.keys(window.CT.currencies || {}).forEach((c) => cs.add(new Option(c, c))); } cs.value = curCode(); }
-  }
-
   function apply() {
     const l = get();
     document.documentElement.lang = l; document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
@@ -146,7 +133,6 @@
     document.querySelectorAll('[data-lang-select]').forEach((el) => { if (!el.options.length) { SUPPORTED.forEach((c) => el.add(new Option(NAMES[c], c))); } el.value = l; });
     fillCountries();
     translateAll();
-    refreshMoney();
     document.dispatchEvent(new CustomEvent('ct:lang', { detail: l }));
   }
   window.CT = window.CT || {};
@@ -162,8 +148,6 @@
     let off = ''; try { off = new Intl.DateTimeFormat('en', { timeZone: z, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find((p) => p.type === 'timeZoneName').value; } catch (e) {}
     return z.replace(/_/g, ' ') + (off ? ' (' + off.replace('GMT', 'UTC') + ')' : '');
   };
-  CT.money = money; CT.refreshMoney = refreshMoney;
-  CT.setCurrency = (c) => { store('ct_cur', c); refreshMoney(); };
   CT.lang = get;
   CT.country = () => load(CKEY) || '';
   CT.setLang = (l) => { store(KEY, l); apply(); };
@@ -172,7 +156,6 @@
   CT.inCountry = (p) => !CT.country() || p.origin_country === CT.country() || p.dest_country === CT.country();
   document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-lang-select]').forEach((el) => el.addEventListener('change', () => CT.setLang(el.value)));
-    const cu = document.getElementById('cur-sel'); if (cu) { cu.addEventListener('change', () => CT.setCurrency(cu.value)); }
     const cs = document.getElementById('country-sel'); if (cs) { cs.addEventListener('change', () => CT.setCountry(cs.value)); }
     apply();
   });

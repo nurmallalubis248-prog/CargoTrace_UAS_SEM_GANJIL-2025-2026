@@ -58,7 +58,6 @@ class TrackingTest extends TestCase
         }
         $this->assertNotNull($shipment->fresh()->actual_arrival_at); // recorded when the cargo ARRIVED
 
-        $shipment->payments()->create(['user_id' => $customer->id, 'order_id' => 'CT-TRK-'.uniqid(), 'amount' => 100000, 'status' => 'PAID']);
         Sanctum::actingAs($admin);
         $this->postJson("/api/shipments/{$shipment->id}/tracking", $this->statusPayload('DELIVERED'))->assertCreated();
 

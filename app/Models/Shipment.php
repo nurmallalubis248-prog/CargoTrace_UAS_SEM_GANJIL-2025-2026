@@ -70,11 +70,6 @@ class Shipment extends Model
         return $this->belongsTo(Warehouse::class);
     }
 
-    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(Payment::class);
-    }
-
     public function destination(): BelongsTo
     {
         return $this->belongsTo(Location::class, 'destination_id');

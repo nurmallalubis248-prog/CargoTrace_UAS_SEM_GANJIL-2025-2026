@@ -75,16 +75,3 @@ All timestamps are stored and displayed in **UTC**.
 | location_id | FK null | linked location (`nullOnDelete`) |
 | capacity_kg | unsigned int | used for the utilisation figure in the admin warehouse page |
 | is_active | bool | |
-
-## payments
-Freight-fee records (no online payment gateway). Used by Accounting, the receipt PDF and the ERP read API.
-| Column | Type | Notes |
-|---|---|---|
-| shipment_id, user_id | FK | cascade / restrict |
-| order_id | string(60) unique | e.g. `CT-1-DEMO-001` |
-| amount | unsigned bigint | IDR |
-| status | string(15) | PENDING, PAID, FAILED, EXPIRED, CANCELLED (indexed) |
-| payout_status | string(20) | PENDING_SETTLEMENT, SETTLED (admin action, audited) |
-| payment_type | string(30) null | e.g. qris, bank_transfer |
-| paid_at, settled_at | datetime null | |
-| snap_token, redirect_url, raw_notification | null | legacy columns from an earlier gateway integration; unused |

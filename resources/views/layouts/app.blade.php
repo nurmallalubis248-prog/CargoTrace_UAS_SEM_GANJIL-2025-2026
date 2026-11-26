@@ -8,14 +8,13 @@
     @include('partials.theme')
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     @stack('head')
-    <script>window.CT = window.CT || {}; CT.currencies = @json(config('cargotrace.currencies'));</script>
+    <script>window.CT = window.CT || {};</script>
     <script src="{{ asset('js/ct-dict.js') }}?v={{ filemtime(public_path('js/ct-dict.js')) }}"></script>
     <script src="{{ asset('js/ct-i18n.js') }}?v={{ filemtime(public_path('js/ct-i18n.js')) }}"></script>
 <style>
-    /* Money cards: never overflow their card (all pages) */
+    /* Cards never overflow their grid cell (all pages) */
     .grid > * { min-width: 0; }
     .card { min-width: 0; }
-    p[data-idr] { font-size: clamp(1rem, 0.6rem + 1.1vw, 1.5rem); line-height: 1.25; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
     body { background: linear-gradient(135deg, #FFF3F8 0%, #FDEBF3 38%, #F1F8E6 100%) fixed !important; }
     body .card { background: rgba(255,255,255,.80); border: 1px solid rgba(255,255,255,.95); border-radius: 22px; box-shadow: 0 8px 28px -12px rgba(233,30,140,.22); }
     /* Sidebar CargoTrace: gradasi pink (atas) -> hijau (bawah), pill aktif putih, ilustrasi pesawat di dasar */
@@ -75,14 +74,13 @@
         'carriers'  => 'M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.38a1.13 1.13 0 0 1-1.13-1.13V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.13c.62 0 1.12-.5 1.12-1.13V14.25m-17.25 0V6.38c0-.62.5-1.13 1.13-1.13h9.74c.62 0 1.13.5 1.13 1.13v11.62m0-11.62h2.9c.3 0 .58.12.8.33l3.3 3.3c.2.2.33.5.33.8v3.62',
         'locations' => 'M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 0c0 7.5-9 11.25-9 11.25S3 18 3 10.5a9 9 0 1 1 18 0Z',
         'warehouses'=> 'M3 21V9.5L12 4l9 5.5V21M7 21v-7h10v7M7 17.5h10M10 14v7M14 14v7',
-        'accounting'=> 'M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01',
         'users'     => 'M15 19.13a9.37 9.37 0 0 0 4.12-.95 4.13 4.13 0 0 0-7.53-2.5M15 19.13v-.01a8.97 8.97 0 0 1-12 0v-.01m12 .02a6.38 6.38 0 0 0-12 .02M12 7.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm7.5 1.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z',
         'audit'     => 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7.5V12l3 2',
     ];
     // Label bawaan (Indonesia) bila kamus i18n belum punya kuncinya
-    $labels = ['dashboard'=>'Dashboard','shipments'=>'Pengiriman','reports'=>'Laporan','notifications'=>'Notifikasi','carriers'=>'Pengangkut','locations'=>'Lokasi','warehouses'=>'Gudang','accounting'=>'Akuntansi','users'=>'Pengguna','audit'=>'Log Audit'];
+    $labels = ['dashboard'=>'Dashboard','shipments'=>'Pengiriman','reports'=>'Laporan','notifications'=>'Notifikasi','carriers'=>'Pengangkut','locations'=>'Lokasi','warehouses'=>'Gudang','users'=>'Pengguna','audit'=>'Log Audit'];
     $links = [['dashboard','dashboard','dashboard','dashboard'], ['shipments','shipments.index','shipments.*','shipments'], ['reports','reports.index','reports.*','reports'], ['notifications','notifications.index','notifications.*','notifications']];
-    $adminLinks = $user->isAdmin() ? [['carriers','admin.carriers.index','admin.carriers.*','carriers'], ['locations','admin.locations.index','admin.locations.*','locations'], ['warehouses','admin.warehouses.index','admin.warehouses.*','warehouses'], ['accounting','admin.accounting.index','admin.accounting.*','accounting'], ['users','admin.users.index','admin.users.*','users'], ['audit','admin.audit.index','admin.audit.*','audit']] : [];
+    $adminLinks = $user->isAdmin() ? [['carriers','admin.carriers.index','admin.carriers.*','carriers'], ['locations','admin.locations.index','admin.locations.*','locations'], ['warehouses','admin.warehouses.index','admin.warehouses.*','warehouses'], ['users','admin.users.index','admin.users.*','users'], ['audit','admin.audit.index','admin.audit.*','audit']] : [];
 @endphp
 <div class="flex min-h-screen">
     {{-- LEFT SIDEBAR: gradasi pink -> hijau (desain CargoTrace). Semua menu fitur ada di sini --}}
@@ -115,7 +113,7 @@
                     @foreach($adminLinks as [$key, $r, $pattern, $icon])
                         <a href="{{ route($r) }}" class="side-link {{ request()->routeIs($pattern) ? 'side-link-active' : '' }}">
                             <svg class="shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $ic[$icon] }}"/></svg>
-                            <span {!! in_array($key, ['warehouses', 'accounting']) ? '' : 'data-i18n="'.$key.'"' !!}>{{ $labels[$key] }}</span>
+                            <span {!! in_array($key, ['warehouses']) ? '' : 'data-i18n="'.$key.'"' !!}>{{ $labels[$key] }}</span>
                         </a>
                     @endforeach
                 </nav>
@@ -180,7 +178,6 @@
                         <p id="top-date" class="whitespace-nowrap text-[11px] text-ink-500"></p>
                     </div>
                     <select id="country-sel" aria-label="Country" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none" style="max-width:11rem"></select>
-                    <select id="cur-sel" aria-label="Currency" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none"></select>
                     <select data-lang-select aria-label="Language" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none"></select>
                     @if($user->isStaff())
                         <a href="{{ route('shipments.create') }}" class="btn-accent !py-1.5"><span data-i18n="newShipment">New shipment</span></a>
@@ -206,7 +203,7 @@
             
             <nav class="flex gap-1 overflow-x-auto px-3 py-2 lg:hidden">
                 @foreach(array_merge($links, $adminLinks) as [$key, $r, $pattern, $icon])
-                    <a href="{{ route($r) }}" class="whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold {{ request()->routeIs($pattern) ? 'grad-brand text-white' : 'bg-matcha-100 text-matcha-800' }}" {!! in_array($key, ['warehouses', 'accounting']) ? '' : 'data-i18n="'.$key.'"' !!}>{{ $labels[$key] }}</a>
+                    <a href="{{ route($r) }}" class="whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold {{ request()->routeIs($pattern) ? 'grad-brand text-white' : 'bg-matcha-100 text-matcha-800' }}" {!! in_array($key, ['warehouses']) ? '' : 'data-i18n="'.$key.'"' !!}>{{ $labels[$key] }}</a>
                 @endforeach
             </nav>
         </header>
@@ -258,7 +255,7 @@
         if (l === 'id' || l === 'en') { const u = new URL(a.href, location.href); u.searchParams.set('lang', l); a.href = u.toString(); }
     }, true);
 
-    // Live notifications: poll the unread counter and flash the badge when something new arrives (payment, arrival, confirmation...).
+    // Live notifications: poll the unread counter and flash the badge when something new arrives (arrival, delay, exception, confirmation...).
     const link = document.querySelector('a[href$="/notifications"]'); if (!link) { return; }
     let last = {{ (int) ($unread ?? 0) }};
     const badge = () => {
