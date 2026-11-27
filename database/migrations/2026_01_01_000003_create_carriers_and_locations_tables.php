@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('code', 10)->unique();
             $table->string('country', 2);
-            $table->string('type', 20)->default('PORT'); // PORT | AIRPORT | WAREHOUSE | OTHER
+            $table->string('type', 20)->default('PORT'); // PORT | AIRPORT | OTHER
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->boolean('is_active')->default(true);

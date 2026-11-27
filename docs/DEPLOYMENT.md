@@ -1,9 +1,9 @@
 # Deployment and pre-submission checklist
 
-Target: a public URL where a recruiter can log in with a demo account. Any host with PHP 8.2+, MySQL 8 / MariaDB, Composer and the ability to point the web root to `public/` works (VPS, shared hosting with SSH, or a PaaS).
+Target: a public URL where a recruiter can log in with a demo account. Any host with PHP 8.3+, MySQL 8 / MariaDB, Composer and the ability to point the web root to `public/` works (VPS, shared hosting with SSH, or a PaaS).
 
 ## 1. Prepare the server
-1. PHP 8.2+ with `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`, `fileinfo`.
+1. PHP 8.3+ with `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`, `fileinfo`.
 2. Create an empty MySQL database and a dedicated database user (not `root`).
 3. HTTPS enabled (needed by the service worker).
 
@@ -26,9 +26,8 @@ DB_DATABASE=...
 DB_USERNAME=...        # dedicated user
 DB_PASSWORD=...        # strong password
 SHOW_DEMO_ACCOUNTS=true            # demo deployment only
-ERP_API_KEY=<random>               # php -r "echo bin2hex(random_bytes(24));"
 GEOCODING_USER_AGENT="CargoTrace-UAS (your-email@example.com)"
-CARGOTRACE_DELAY_LOW_MAX_HOURS=6   # set to your group's scenario
+CARGOTRACE_DELAY_LOW_MAX_HOURS=6   # adjust if your scenario needs other thresholds
 CARGOTRACE_DELAY_MEDIUM_MAX_HOURS=24
 ```
 

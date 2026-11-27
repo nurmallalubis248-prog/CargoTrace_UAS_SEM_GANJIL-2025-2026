@@ -1,7 +1,7 @@
 -- CargoTrace - database schema (MySQL / MariaDB, XAMPP)
 -- Equivalent to the Laravel migrations in database/migrations/.
 -- Usage: select database `cargotrace` in phpMyAdmin, then Import this file.
--- This ONE file creates ALL tables (users, carriers + transport mode, locations, warehouses, shipments, tracking, exceptions,
+-- This ONE file creates ALL tables (users, carriers + transport mode, locations, shipments, tracking, exceptions,
 -- notifications, audit logs) AND fills them with demo accounts and sample data.
 -- Lifecycle supported: CREATED > BOOKED > PICKED_UP > IN_TRANSIT > ARRIVED > DELIVERED (status columns are VARCHAR, no enum to change).
 -- Import ONLY this file (it replaces any older patch files).
@@ -20,7 +20,6 @@ DROP TABLE IF EXISTS `shipment_exceptions`;
 DROP TABLE IF EXISTS `tracking_events`;
 DROP TABLE IF EXISTS `shipment_items`;
 DROP TABLE IF EXISTS `shipments`;
-DROP TABLE IF EXISTS `warehouses`;
 DROP TABLE IF EXISTS `locations`;
 DROP TABLE IF EXISTS `carriers`;
 DROP TABLE IF EXISTS `personal_access_tokens`;
@@ -87,7 +86,7 @@ CREATE TABLE `locations` (
   `name` VARCHAR(255) NOT NULL,
   `code` VARCHAR(10) NOT NULL,
   `country` VARCHAR(2) NOT NULL,
-  `type` VARCHAR(20) NOT NULL DEFAULT 'PORT',        -- PORT | AIRPORT | WAREHOUSE | OTHER
+  `type` VARCHAR(20) NOT NULL DEFAULT 'PORT',        -- PORT | AIRPORT | OTHER
   `latitude` DECIMAL(10,7) NOT NULL,
   `longitude` DECIMAL(10,7) NOT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -95,22 +94,6 @@ CREATE TABLE `locations` (
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `locations_code_unique` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ---------------------------------------------------------------- warehouses
-CREATE TABLE `warehouses` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(255) NOT NULL,
-  `code` VARCHAR(12) NOT NULL,
-  `location_id` BIGINT UNSIGNED NULL,
-  `capacity_kg` INT UNSIGNED NOT NULL,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at` TIMESTAMP NULL,
-  `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `warehouses_code_unique` (`code`),
-  KEY `warehouses_location_id_foreign` (`location_id`),
-  CONSTRAINT `warehouses_location_id_foreign` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------- shipments
@@ -122,7 +105,6 @@ CREATE TABLE `shipments` (
   `carrier_id` BIGINT UNSIGNED NOT NULL,
   `origin_id` BIGINT UNSIGNED NOT NULL,
   `destination_id` BIGINT UNSIGNED NOT NULL,
-  `warehouse_id` BIGINT UNSIGNED NULL,
   `created_by` BIGINT UNSIGNED NOT NULL,
   `cargo_type` VARCHAR(30) NOT NULL,
   `weight_kg` DECIMAL(12,2) NOT NULL,
@@ -148,12 +130,10 @@ CREATE TABLE `shipments` (
   KEY `shipments_expected_arrival_at_index` (`expected_arrival_at`),
   KEY `shipments_current_status_index` (`current_status`),
   KEY `shipments_is_delayed_index` (`is_delayed`),
-  KEY `shipments_warehouse_id_foreign` (`warehouse_id`),
   CONSTRAINT `shipments_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `shipments_carrier_id_foreign` FOREIGN KEY (`carrier_id`) REFERENCES `carriers` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `shipments_origin_id_foreign` FOREIGN KEY (`origin_id`) REFERENCES `locations` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `shipments_destination_id_foreign` FOREIGN KEY (`destination_id`) REFERENCES `locations` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `shipments_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `shipments_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -294,32 +274,25 @@ INSERT INTO `locations` (`id`, `name`, `code`, `country`, `type`, `latitude`, `l
   (16, 'Changi Airport (Singapore)', 'SGSIA', 'SG', 'AIRPORT', 1.3644, 103.9915, 1, @now, @now),
   (17, 'Dubai International Airport', 'AEDXB', 'AE', 'AIRPORT', 25.2532, 55.3657, 1, @now, @now),
   (18, 'Soekarno-Hatta Airport (Jakarta)', 'IDCGK', 'ID', 'AIRPORT', -6.1256, 106.6559, 1, @now, @now),
-  (19, 'Bandung (Warehouse)', 'IDBDO', 'ID', 'WAREHOUSE', -6.9175, 107.6191, 1, @now, @now),
-  (20, 'Medan (Warehouse)', 'IDMES', 'ID', 'WAREHOUSE', 3.5952, 98.6722, 1, @now, @now),
-  (21, 'Surabaya (Warehouse)', 'IDSUB', 'ID', 'WAREHOUSE', -7.2575, 112.7521, 1, @now, @now);
-
--- warehouses (location_id dicari lewat kode lokasi)
-INSERT INTO `warehouses` (`id`, `name`, `code`, `location_id`, `capacity_kg`, `is_active`, `created_at`, `updated_at`) VALUES
-  (1, 'Jakarta Distribution Hub', 'JKT-WH', (SELECT `id` FROM `locations` WHERE `code` = 'IDJKT' LIMIT 1), 60000, 1, @now, @now),
-  (2, 'Surabaya Warehouse', 'SUB-WH', (SELECT `id` FROM `locations` WHERE `code` = 'IDSUB' LIMIT 1), 40000, 1, @now, @now),
-  (3, 'Medan Warehouse', 'MES-WH', (SELECT `id` FROM `locations` WHERE `code` = 'IDMES' LIMIT 1), 30000, 1, @now, @now),
-  (4, 'Bandung Warehouse', 'BDO-WH', (SELECT `id` FROM `locations` WHERE `code` = 'IDBDO' LIMIT 1), 25000, 1, @now, @now);
+  (19, 'Bandung', 'IDBDO', 'ID', 'OTHER', -6.9175, 107.6191, 1, @now, @now),
+  (20, 'Medan', 'IDMES', 'ID', 'OTHER', 3.5952, 98.6722, 1, @now, @now),
+  (21, 'Surabaya', 'IDSUB', 'ID', 'OTHER', -7.2575, 112.7521, 1, @now, @now);
 
 -- shipments (13): 9 IN_TRANSIT, 2 DELIVERED, 1 BOOKED, 1 CREATED; 6 terlambat
-INSERT INTO `shipments` (`id`, `shipment_number`, `reference_number`, `customer_id`, `carrier_id`, `origin_id`, `destination_id`, `warehouse_id`, `created_by`, `cargo_type`, `weight_kg`, `volume_cbm`, `expected_departure_at`, `expected_arrival_at`, `estimated_arrival_at`, `actual_arrival_at`, `current_status`, `current_latitude`, `current_longitude`, `current_location_label`, `last_event_at`, `is_delayed`, `delay_hours`, `delay_severity`, `deleted_at`, `created_at`, `updated_at`) VALUES
-  (1, 'CT261109-HDYAK', 'PO-38529', 3, 1, 1, 2, NULL, 2, 'GENERAL', 11380.8, NULL, DATE_ADD(@now, INTERVAL -5184000 SECOND), DATE_ADD(@now, INTERVAL -2592000 SECOND), DATE_ADD(@now, INTERVAL -2592000 SECOND), DATE_ADD(@now, INTERVAL -2574000 SECOND), 'DELIVERED', 51.954, 4.142, 'Port of Rotterdam', DATE_ADD(@now, INTERVAL -2574000 SECOND), 1, 5.0, 'LOW', NULL, DATE_ADD(@now, INTERVAL -5443200 SECOND), DATE_ADD(@now, INTERVAL -2574000 SECOND)),
-  (2, 'CT261109-W5HNE', 'PO-61084', 4, 6, 7, 8, NULL, 2, 'BULK', 31000.0, NULL, DATE_ADD(@now, INTERVAL -2592000 SECOND), DATE_ADD(@now, INTERVAL -1555200 SECOND), DATE_ADD(@now, INTERVAL -1555200 SECOND), DATE_ADD(@now, INTERVAL -1555200 SECOND), 'DELIVERED', 18.95, 72.95, 'Nhava Sheva (Mumbai)', DATE_ADD(@now, INTERVAL -1555200 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -2851200 SECOND), DATE_ADD(@now, INTERVAL -1555200 SECOND)),
-  (3, 'CT261109-ND9PX', 'PO-73901', 4, 2, 1, 2, NULL, 2, 'REFRIGERATED', 12200.0, NULL, DATE_ADD(@now, INTERVAL -1728000 SECOND), DATE_ADD(@now, INTERVAL 691200 SECOND), DATE_ADD(@now, INTERVAL 835200 SECOND), NULL, 'IN_TRANSIT', 31.26, 32.31, 'Port Said approach', DATE_ADD(@now, INTERVAL -427500 SECOND), 1, 40.0, 'HIGH', NULL, DATE_ADD(@now, INTERVAL -1987200 SECOND), DATE_ADD(@now, INTERVAL -427500 SECOND)),
-  (4, 'CT261109-KR0AT', 'PO-48213', 3, 1, 1, 2, NULL, 2, 'CONTAINER_FCL', 18500.0, NULL, DATE_ADD(@now, INTERVAL -1209600 SECOND), DATE_ADD(@now, INTERVAL 1382400 SECOND), DATE_ADD(@now, INTERVAL 1382400 SECOND), NULL, 'IN_TRANSIT', 12.5, 45.0, 'Gulf of Aden', DATE_ADD(@now, INTERVAL -398400 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -1468800 SECOND), DATE_ADD(@now, INTERVAL -398400 SECOND)),
-  (5, 'CT261109-OTX7Y', 'PO-15642', 3, 3, 3, 4, NULL, 2, 'GENERAL', 24000.0, NULL, DATE_ADD(@now, INTERVAL -864000 SECOND), DATE_ADD(@now, INTERVAL 518400 SECOND), DATE_ADD(@now, INTERVAL 572400 SECOND), NULL, 'IN_TRANSIT', 36.0, -150.0, 'North Pacific (east)', DATE_ADD(@now, INTERVAL -281400 SECOND), 1, 15.0, 'MEDIUM', NULL, DATE_ADD(@now, INTERVAL -1123200 SECOND), DATE_ADD(@now, INTERVAL -281400 SECOND)),
-  (6, 'CT261109-LYAWE', 'PO-26458', 3, 5, 5, 6, NULL, 2, 'GENERAL', 6400.0, NULL, DATE_ADD(@now, INTERVAL -777600 SECOND), DATE_ADD(@now, INTERVAL 172800 SECOND), DATE_ADD(@now, INTERVAL 187200 SECOND), NULL, 'IN_TRANSIT', -11.5, 126.0, 'Timor Sea', DATE_ADD(@now, INTERVAL -252600 SECOND), 1, 4.0, 'LOW', NULL, DATE_ADD(@now, INTERVAL -1036800 SECOND), DATE_ADD(@now, INTERVAL -252600 SECOND)),
-  (7, 'CT261109-0F6SM', 'PO-90377', 4, 4, 3, 4, NULL, 2, 'CONTAINER_FCL', 9800.0, NULL, DATE_ADD(@now, INTERVAL -691200 SECOND), DATE_ADD(@now, INTERVAL 691200 SECOND), DATE_ADD(@now, INTERVAL 691200 SECOND), NULL, 'IN_TRANSIT', 38.0, 160.0, 'North Pacific (west)', DATE_ADD(@now, INTERVAL -336600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -950400 SECOND), DATE_ADD(@now, INTERVAL -336600 SECOND)),
-  (8, 'CT261109-BFCDL', 'PO-52816', 4, 5, 5, 6, NULL, 2, 'CONTAINER_LCL', 3100.0, NULL, DATE_ADD(@now, INTERVAL -604800 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), NULL, 'IN_TRANSIT', -8.7, 115.7, 'Lombok Strait', DATE_ADD(@now, INTERVAL -345600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -777600 SECOND), DATE_ADD(@now, INTERVAL -345600 SECOND)),
-  (9, 'CT261109-GKMDQ', 'PO-84370', 3, 7, 19, 20, 4, 2, 'GENERAL', 4200.0, NULL, DATE_ADD(@now, INTERVAL -345600 SECOND), DATE_ADD(@now, INTERVAL 86400 SECOND), DATE_ADD(@now, INTERVAL 194400 SECOND), NULL, 'IN_TRANSIT', -5.4, 105.25, 'Trans-Sumatra Toll Road (Lampung)', DATE_ADD(@now, INTERVAL -84600 SECOND), 1, 30.0, 'HIGH', NULL, DATE_ADD(@now, INTERVAL -432000 SECOND), DATE_ADD(@now, INTERVAL -84600 SECOND)),
-  (10, 'CT261109-G2D0R', 'PO-67159', 4, 10, 16, 17, NULL, 2, 'GENERAL', 2400.0, NULL, DATE_ADD(@now, INTERVAL -28800 SECOND), DATE_ADD(@now, INTERVAL 14400 SECOND), DATE_ADD(@now, INTERVAL 43200 SECOND), NULL, 'IN_TRANSIT', 18.0, 67.0, 'Over the Arabian Sea', DATE_ADD(@now, INTERVAL -7200 SECOND), 1, 8.0, 'MEDIUM', NULL, DATE_ADD(@now, INTERVAL -172800 SECOND), DATE_ADD(@now, INTERVAL -7200 SECOND)),
-  (11, 'CT261109-E8MTV', 'PO-30942', 4, 8, 21, 19, 2, 2, 'CONTAINER_LCL', 1800.0, NULL, DATE_ADD(@now, INTERVAL 172800 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), NULL, 'BOOKED', -7.2575, 112.7521, 'Surabaya (Warehouse)', DATE_ADD(@now, INTERVAL -97200 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -108000 SECOND), DATE_ADD(@now, INTERVAL -97200 SECOND)),
-  (12, 'CT261109-P2ZUC', 'PO-71584', 3, 9, 18, 16, NULL, 2, 'GENERAL', 850.0, NULL, DATE_ADD(@now, INTERVAL -7200 SECOND), DATE_ADD(@now, INTERVAL 3600 SECOND), DATE_ADD(@now, INTERVAL 3600 SECOND), NULL, 'IN_TRANSIT', -2.5, 105.2, 'Over the Java Sea', DATE_ADD(@now, INTERVAL -3600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -50400 SECOND), DATE_ADD(@now, INTERVAL -3600 SECOND)),
-  (13, 'CT261109-J3QXB', 'PO-57236', 3, 2, 3, 4, NULL, 2, 'LIQUID', 21000.0, NULL, DATE_ADD(@now, INTERVAL 777600 SECOND), DATE_ADD(@now, INTERVAL 2160000 SECOND), DATE_ADD(@now, INTERVAL 2160000 SECOND), NULL, 'CREATED', NULL, NULL, NULL, DATE_ADD(@now, INTERVAL -21600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -21600 SECOND), DATE_ADD(@now, INTERVAL -21600 SECOND));
+INSERT INTO `shipments` (`id`, `shipment_number`, `reference_number`, `customer_id`, `carrier_id`, `origin_id`, `destination_id`, `created_by`, `cargo_type`, `weight_kg`, `volume_cbm`, `expected_departure_at`, `expected_arrival_at`, `estimated_arrival_at`, `actual_arrival_at`, `current_status`, `current_latitude`, `current_longitude`, `current_location_label`, `last_event_at`, `is_delayed`, `delay_hours`, `delay_severity`, `deleted_at`, `created_at`, `updated_at`) VALUES
+  (1, 'CT261109-HDYAK', 'PO-38529', 3, 1, 1, 2, 2, 'GENERAL', 11380.8, NULL, DATE_ADD(@now, INTERVAL -5184000 SECOND), DATE_ADD(@now, INTERVAL -2592000 SECOND), DATE_ADD(@now, INTERVAL -2592000 SECOND), DATE_ADD(@now, INTERVAL -2574000 SECOND), 'DELIVERED', 51.954, 4.142, 'Port of Rotterdam', DATE_ADD(@now, INTERVAL -2574000 SECOND), 1, 5.0, 'LOW', NULL, DATE_ADD(@now, INTERVAL -5443200 SECOND), DATE_ADD(@now, INTERVAL -2574000 SECOND)),
+  (2, 'CT261109-W5HNE', 'PO-61084', 4, 6, 7, 8, 2, 'BULK', 31000.0, NULL, DATE_ADD(@now, INTERVAL -2592000 SECOND), DATE_ADD(@now, INTERVAL -1555200 SECOND), DATE_ADD(@now, INTERVAL -1555200 SECOND), DATE_ADD(@now, INTERVAL -1555200 SECOND), 'DELIVERED', 18.95, 72.95, 'Nhava Sheva (Mumbai)', DATE_ADD(@now, INTERVAL -1555200 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -2851200 SECOND), DATE_ADD(@now, INTERVAL -1555200 SECOND)),
+  (3, 'CT261109-ND9PX', 'PO-73901', 4, 2, 1, 2, 2, 'REFRIGERATED', 12200.0, NULL, DATE_ADD(@now, INTERVAL -1728000 SECOND), DATE_ADD(@now, INTERVAL 691200 SECOND), DATE_ADD(@now, INTERVAL 835200 SECOND), NULL, 'IN_TRANSIT', 31.26, 32.31, 'Port Said approach', DATE_ADD(@now, INTERVAL -427500 SECOND), 1, 40.0, 'HIGH', NULL, DATE_ADD(@now, INTERVAL -1987200 SECOND), DATE_ADD(@now, INTERVAL -427500 SECOND)),
+  (4, 'CT261109-KR0AT', 'PO-48213', 3, 1, 1, 2, 2, 'CONTAINER_FCL', 18500.0, NULL, DATE_ADD(@now, INTERVAL -1209600 SECOND), DATE_ADD(@now, INTERVAL 1382400 SECOND), DATE_ADD(@now, INTERVAL 1382400 SECOND), NULL, 'IN_TRANSIT', 12.5, 45.0, 'Gulf of Aden', DATE_ADD(@now, INTERVAL -398400 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -1468800 SECOND), DATE_ADD(@now, INTERVAL -398400 SECOND)),
+  (5, 'CT261109-OTX7Y', 'PO-15642', 3, 3, 3, 4, 2, 'GENERAL', 24000.0, NULL, DATE_ADD(@now, INTERVAL -864000 SECOND), DATE_ADD(@now, INTERVAL 518400 SECOND), DATE_ADD(@now, INTERVAL 572400 SECOND), NULL, 'IN_TRANSIT', 36.0, -150.0, 'North Pacific (east)', DATE_ADD(@now, INTERVAL -281400 SECOND), 1, 15.0, 'MEDIUM', NULL, DATE_ADD(@now, INTERVAL -1123200 SECOND), DATE_ADD(@now, INTERVAL -281400 SECOND)),
+  (6, 'CT261109-LYAWE', 'PO-26458', 3, 5, 5, 6, 2, 'GENERAL', 6400.0, NULL, DATE_ADD(@now, INTERVAL -777600 SECOND), DATE_ADD(@now, INTERVAL 172800 SECOND), DATE_ADD(@now, INTERVAL 187200 SECOND), NULL, 'IN_TRANSIT', -11.5, 126.0, 'Timor Sea', DATE_ADD(@now, INTERVAL -252600 SECOND), 1, 4.0, 'LOW', NULL, DATE_ADD(@now, INTERVAL -1036800 SECOND), DATE_ADD(@now, INTERVAL -252600 SECOND)),
+  (7, 'CT261109-0F6SM', 'PO-90377', 4, 4, 3, 4, 2, 'CONTAINER_FCL', 9800.0, NULL, DATE_ADD(@now, INTERVAL -691200 SECOND), DATE_ADD(@now, INTERVAL 691200 SECOND), DATE_ADD(@now, INTERVAL 691200 SECOND), NULL, 'IN_TRANSIT', 38.0, 160.0, 'North Pacific (west)', DATE_ADD(@now, INTERVAL -336600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -950400 SECOND), DATE_ADD(@now, INTERVAL -336600 SECOND)),
+  (8, 'CT261109-BFCDL', 'PO-52816', 4, 5, 5, 6, 2, 'CONTAINER_LCL', 3100.0, NULL, DATE_ADD(@now, INTERVAL -604800 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), NULL, 'IN_TRANSIT', -8.7, 115.7, 'Lombok Strait', DATE_ADD(@now, INTERVAL -345600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -777600 SECOND), DATE_ADD(@now, INTERVAL -345600 SECOND)),
+  (9, 'CT261109-GKMDQ', 'PO-84370', 3, 7, 19, 20, 2, 'GENERAL', 4200.0, NULL, DATE_ADD(@now, INTERVAL -345600 SECOND), DATE_ADD(@now, INTERVAL 86400 SECOND), DATE_ADD(@now, INTERVAL 194400 SECOND), NULL, 'IN_TRANSIT', -5.4, 105.25, 'Trans-Sumatra Toll Road (Lampung)', DATE_ADD(@now, INTERVAL -84600 SECOND), 1, 30.0, 'HIGH', NULL, DATE_ADD(@now, INTERVAL -432000 SECOND), DATE_ADD(@now, INTERVAL -84600 SECOND)),
+  (10, 'CT261109-G2D0R', 'PO-67159', 4, 10, 16, 17, 2, 'GENERAL', 2400.0, NULL, DATE_ADD(@now, INTERVAL -28800 SECOND), DATE_ADD(@now, INTERVAL 14400 SECOND), DATE_ADD(@now, INTERVAL 43200 SECOND), NULL, 'IN_TRANSIT', 18.0, 67.0, 'Over the Arabian Sea', DATE_ADD(@now, INTERVAL -7200 SECOND), 1, 8.0, 'MEDIUM', NULL, DATE_ADD(@now, INTERVAL -172800 SECOND), DATE_ADD(@now, INTERVAL -7200 SECOND)),
+  (11, 'CT261109-E8MTV', 'PO-30942', 4, 8, 21, 19, 2, 'CONTAINER_LCL', 1800.0, NULL, DATE_ADD(@now, INTERVAL 172800 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), DATE_ADD(@now, INTERVAL 345600 SECOND), NULL, 'BOOKED', -7.2575, 112.7521, 'Surabaya', DATE_ADD(@now, INTERVAL -97200 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -108000 SECOND), DATE_ADD(@now, INTERVAL -97200 SECOND)),
+  (12, 'CT261109-P2ZUC', 'PO-71584', 3, 9, 18, 16, 2, 'GENERAL', 850.0, NULL, DATE_ADD(@now, INTERVAL -7200 SECOND), DATE_ADD(@now, INTERVAL 3600 SECOND), DATE_ADD(@now, INTERVAL 3600 SECOND), NULL, 'IN_TRANSIT', -2.5, 105.2, 'Over the Java Sea', DATE_ADD(@now, INTERVAL -3600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -50400 SECOND), DATE_ADD(@now, INTERVAL -3600 SECOND)),
+  (13, 'CT261109-J3QXB', 'PO-57236', 3, 2, 3, 4, 2, 'LIQUID', 21000.0, NULL, DATE_ADD(@now, INTERVAL 777600 SECOND), DATE_ADD(@now, INTERVAL 2160000 SECOND), DATE_ADD(@now, INTERVAL 2160000 SECOND), NULL, 'CREATED', NULL, NULL, NULL, DATE_ADD(@now, INTERVAL -21600 SECOND), 0, 0.0, NULL, NULL, DATE_ADD(@now, INTERVAL -21600 SECOND), DATE_ADD(@now, INTERVAL -21600 SECOND));
 
 -- shipment_items
 INSERT INTO `shipment_items` (`id`, `shipment_id`, `description`, `quantity`, `weight_kg`, `volume_cbm`, `created_at`, `updated_at`) VALUES
@@ -397,10 +370,10 @@ INSERT INTO `tracking_events` (`id`, `shipment_id`, `event_type`, `status`, `loc
   (56, 8, 'STATUS_UPDATE', 'PICKED_UP', 5, 'Tanjung Priok (Jakarta)', -6.1, 106.88, DATE_ADD(@now, INTERVAL -604800 SECOND), 'Cargo picked up and gated in at origin terminal.', 0, 2, DATE_ADD(@now, INTERVAL -604800 SECOND), DATE_ADD(@now, INTERVAL -604800 SECOND)),
   (57, 8, 'STATUS_UPDATE', 'IN_TRANSIT', 5, 'Tanjung Priok (Jakarta)', -6.1, 106.88, DATE_ADD(@now, INTERVAL -583200 SECOND), 'Vessel departed origin port.', 0, 2, DATE_ADD(@now, INTERVAL -583200 SECOND), DATE_ADD(@now, INTERVAL -583200 SECOND)),
   (58, 8, 'CHECKPOINT', NULL, NULL, 'Lombok Strait', -8.7, 115.7, DATE_ADD(@now, INTERVAL -345600 SECOND), 'Position report (demo data).', 0, 2, DATE_ADD(@now, INTERVAL -345600 SECOND), DATE_ADD(@now, INTERVAL -345600 SECOND)),
-  (59, 9, 'STATUS_UPDATE', 'CREATED', 19, 'Bandung (Warehouse)', -6.9175, 107.6191, DATE_ADD(@now, INTERVAL -432000 SECOND), 'Shipment created.', 0, 2, DATE_ADD(@now, INTERVAL -432000 SECOND), DATE_ADD(@now, INTERVAL -432000 SECOND)),
-  (60, 9, 'STATUS_UPDATE', 'BOOKED', 19, 'Bandung (Warehouse)', -6.9175, 107.6191, DATE_ADD(@now, INTERVAL -388800 SECOND), 'Booking confirmed with carrier.', 0, 2, DATE_ADD(@now, INTERVAL -388800 SECOND), DATE_ADD(@now, INTERVAL -388800 SECOND)),
-  (61, 9, 'STATUS_UPDATE', 'PICKED_UP', 19, 'Bandung (Warehouse)', -6.9175, 107.6191, DATE_ADD(@now, INTERVAL -345600 SECOND), 'Cargo picked up and gated in at origin terminal.', 0, 2, DATE_ADD(@now, INTERVAL -345600 SECOND), DATE_ADD(@now, INTERVAL -345600 SECOND)),
-  (62, 9, 'STATUS_UPDATE', 'IN_TRANSIT', 19, 'Bandung (Warehouse)', -6.9175, 107.6191, DATE_ADD(@now, INTERVAL -343800 SECOND), 'Truck departed origin warehouse.', 0, 2, DATE_ADD(@now, INTERVAL -343800 SECOND), DATE_ADD(@now, INTERVAL -343800 SECOND)),
+  (59, 9, 'STATUS_UPDATE', 'CREATED', 19, 'Bandung', -6.9175, 107.6191, DATE_ADD(@now, INTERVAL -432000 SECOND), 'Shipment created.', 0, 2, DATE_ADD(@now, INTERVAL -432000 SECOND), DATE_ADD(@now, INTERVAL -432000 SECOND)),
+  (60, 9, 'STATUS_UPDATE', 'BOOKED', 19, 'Bandung', -6.9175, 107.6191, DATE_ADD(@now, INTERVAL -388800 SECOND), 'Booking confirmed with carrier.', 0, 2, DATE_ADD(@now, INTERVAL -388800 SECOND), DATE_ADD(@now, INTERVAL -388800 SECOND)),
+  (61, 9, 'STATUS_UPDATE', 'PICKED_UP', 19, 'Bandung', -6.9175, 107.6191, DATE_ADD(@now, INTERVAL -345600 SECOND), 'Cargo picked up and gated in at origin terminal.', 0, 2, DATE_ADD(@now, INTERVAL -345600 SECOND), DATE_ADD(@now, INTERVAL -345600 SECOND)),
+  (62, 9, 'STATUS_UPDATE', 'IN_TRANSIT', 19, 'Bandung', -6.9175, 107.6191, DATE_ADD(@now, INTERVAL -343800 SECOND), 'Truck departed origin.', 0, 2, DATE_ADD(@now, INTERVAL -343800 SECOND), DATE_ADD(@now, INTERVAL -343800 SECOND)),
   (63, 9, 'CHECKPOINT', NULL, NULL, 'Trans-Java Toll Road (Cikampek)', -6.4, 107.45, DATE_ADD(@now, INTERVAL -259200 SECOND), 'Position report (demo data).', 0, 2, DATE_ADD(@now, INTERVAL -259200 SECOND), DATE_ADD(@now, INTERVAL -259200 SECOND)),
   (64, 9, 'CHECKPOINT', NULL, NULL, 'Merak Port (Cilegon)', -5.93, 106.0, DATE_ADD(@now, INTERVAL -172800 SECOND), 'Position report (demo data).', 0, 2, DATE_ADD(@now, INTERVAL -172800 SECOND), DATE_ADD(@now, INTERVAL -172800 SECOND)),
   (65, 9, 'CHECKPOINT', NULL, NULL, 'Trans-Sumatra Toll Road (Lampung)', -5.4, 105.25, DATE_ADD(@now, INTERVAL -86400 SECOND), 'Position report (demo data).', 0, 2, DATE_ADD(@now, INTERVAL -86400 SECOND), DATE_ADD(@now, INTERVAL -86400 SECOND)),
@@ -414,8 +387,8 @@ INSERT INTO `tracking_events` (`id`, `shipment_id`, `event_type`, `status`, `loc
   (73, 10, 'CHECKPOINT', NULL, NULL, 'Over the Arabian Sea', 18.0, 67.0, DATE_ADD(@now, INTERVAL -9000 SECOND), 'Position report (demo data).', 0, 2, DATE_ADD(@now, INTERVAL -9000 SECOND), DATE_ADD(@now, INTERVAL -9000 SECOND)),
   (74, 10, 'ETA_UPDATE', NULL, NULL, NULL, NULL, NULL, DATE_ADD(@now, INTERVAL -7200 SECOND), 'Carrier revised the ETA.', 0, 2, DATE_ADD(@now, INTERVAL -7200 SECOND), DATE_ADD(@now, INTERVAL -7200 SECOND)),
   (75, 10, 'EXCEPTION', NULL, NULL, 'Over the Arabian Sea', 18.0, 67.0, DATE_ADD(@now, INTERVAL -10800 SECOND), '[WEATHER_DELAY] Flight held for en-route weather; reduced cruise speed.', 1, 2, DATE_ADD(@now, INTERVAL -10800 SECOND), DATE_ADD(@now, INTERVAL -10800 SECOND)),
-  (76, 11, 'STATUS_UPDATE', 'CREATED', 21, 'Surabaya (Warehouse)', -7.2575, 112.7521, DATE_ADD(@now, INTERVAL -108000 SECOND), 'Shipment created.', 0, 2, DATE_ADD(@now, INTERVAL -108000 SECOND), DATE_ADD(@now, INTERVAL -108000 SECOND)),
-  (77, 11, 'STATUS_UPDATE', 'BOOKED', 21, 'Surabaya (Warehouse)', -7.2575, 112.7521, DATE_ADD(@now, INTERVAL -97200 SECOND), 'Booking confirmed with carrier.', 0, 2, DATE_ADD(@now, INTERVAL -97200 SECOND), DATE_ADD(@now, INTERVAL -97200 SECOND)),
+  (76, 11, 'STATUS_UPDATE', 'CREATED', 21, 'Surabaya', -7.2575, 112.7521, DATE_ADD(@now, INTERVAL -108000 SECOND), 'Shipment created.', 0, 2, DATE_ADD(@now, INTERVAL -108000 SECOND), DATE_ADD(@now, INTERVAL -108000 SECOND)),
+  (77, 11, 'STATUS_UPDATE', 'BOOKED', 21, 'Surabaya', -7.2575, 112.7521, DATE_ADD(@now, INTERVAL -97200 SECOND), 'Booking confirmed with carrier.', 0, 2, DATE_ADD(@now, INTERVAL -97200 SECOND), DATE_ADD(@now, INTERVAL -97200 SECOND)),
   (78, 12, 'STATUS_UPDATE', 'CREATED', 18, 'Soekarno-Hatta Airport (Jakarta)', -6.1256, 106.6559, DATE_ADD(@now, INTERVAL -50400 SECOND), 'Shipment created.', 0, 2, DATE_ADD(@now, INTERVAL -50400 SECOND), DATE_ADD(@now, INTERVAL -50400 SECOND)),
   (79, 12, 'STATUS_UPDATE', 'BOOKED', 18, 'Soekarno-Hatta Airport (Jakarta)', -6.1256, 106.6559, DATE_ADD(@now, INTERVAL -46800 SECOND), 'Booking confirmed with carrier.', 0, 2, DATE_ADD(@now, INTERVAL -46800 SECOND), DATE_ADD(@now, INTERVAL -46800 SECOND)),
   (80, 12, 'STATUS_UPDATE', 'PICKED_UP', 18, 'Soekarno-Hatta Airport (Jakarta)', -6.1256, 106.6559, DATE_ADD(@now, INTERVAL -9000 SECOND), 'Cargo picked up and gated in at origin terminal.', 0, 2, DATE_ADD(@now, INTERVAL -9000 SECOND), DATE_ADD(@now, INTERVAL -9000 SECOND)),

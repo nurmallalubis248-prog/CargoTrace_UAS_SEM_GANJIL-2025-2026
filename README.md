@@ -1,12 +1,12 @@
 # CargoTrace — Global Shipment Visibility & Tracking Platform
 
-Web Programming 2 · Final Project (UAS). A Laravel application that lets logistics companies and their customers follow shipments across the world: lifecycle, tracking timeline, live map, ETA/delay detection, delay forecast, exception management, warehouses, dashboard, multi-language UI and a REST API.
+Web Programming 2 · Final Project (UAS). A Laravel application that lets logistics companies and their customers follow shipments across the world: lifecycle, tracking timeline, live map, ETA/delay detection, delay forecast, exception management, dashboard, multi-language UI and a REST API.
 
 > **Repository:** https://github.com/nurmallalubis248-prog/CargoTrace_UAS_SEM_GANJIL-2025-2026
 > **Live demo:** _TODO before submission: deploy following [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and replace this line with the public URL_ (demo accounts are listed below)
 
 ## Problem and solution
-Shipment information is scattered, customers cannot see the latest status, delays and exceptions are invisible, and operators have no place to prioritise follow-ups. CargoTrace centralises shipments, carriers, locations, warehouses and tracking events, shows the journey on a map and timeline, flags and forecasts delays with deterministic rules, lets operators manage exceptions, and lets customers follow their cargo and confirm receipt once it has arrived.
+Shipment information is scattered, customers cannot see the latest status, delays and exceptions are invisible, and operators have no place to prioritise follow-ups. CargoTrace centralises shipments, carriers, locations and tracking events, shows the journey on a map and timeline, flags and forecasts delays with deterministic rules, lets operators manage exceptions, and lets customers follow their cargo and confirm receipt once it has arrived.
 
 ## Features
 
@@ -34,7 +34,7 @@ Shipment information is scattered, customers cannot see the latest status, delay
 - Live clock that follows the selected country's time zone.
 
 ### Master data and administration (admin)
-- **Carriers** (with transport mode AIR / ROAD / SEA), **Locations** (geocoding via Nominatim), **Warehouses** (code, location, capacity) and **Users** (create, change role). Carriers, locations and warehouses can be activated / deactivated.
+- **Carriers** (with transport mode AIR / ROAD / SEA), **Locations** (geocoding via Nominatim) and **Users** (create, change role). Carriers and locations can be activated / deactivated.
 - **Audit log** (actor, action, time, entity) and in-app **notifications**. The sidebar badge refreshes every 15 s; admins are notified when the customer confirms receipt, and customers when their cargo arrives.
 
 ### Email verification
@@ -52,7 +52,7 @@ Set `CARGOTRACE_SIMULATION=true`. By default (`CARGOTRACE_SIMULATION_MODE=time`)
 - Open-Meteo weather (shipment page) and Nominatim geocoding (admin location form), with timeouts, HTTP-error and empty-data handling. Weather is informational only and is not used to predict delays.
 
 ## Tech stack
-PHP 8.2+ (8.3 recommended) · Laravel 12 · MySQL / MariaDB (XAMPP) · Eloquent + migrations/seeders · Blade · Tailwind CSS (CDN) · Vanilla JS + Fetch · Leaflet + OpenStreetMap · Chart.js · Laravel Sanctum · barryvdh/laravel-dompdf · OSRM routing · PHPUnit · Postman.
+PHP 8.3+ · Laravel 12 · MySQL / MariaDB (XAMPP) · Eloquent + migrations/seeders · Blade · Tailwind CSS (CDN) · Vanilla JS + Fetch · Leaflet + OpenStreetMap · Chart.js · Laravel Sanctum · barryvdh/laravel-dompdf · OSRM routing · PHPUnit · Postman.
 
 ## Setup
 
@@ -88,7 +88,7 @@ php artisan migrate:fresh --seed
 > Change or delete these accounts on any public deployment. The login page only lists them when `SHOW_DEMO_ACCOUNTS=true`.
 
 ### Demo data
-`database/seeders/DatabaseSeeder.php` creates ports, carriers, warehouses, the four users above and sample shipments (on time, delayed LOW/MEDIUM/HIGH, delivered, booked, created, with exceptions). Seeding goes through the real service classes so all business rules apply. **Port names/coordinates and carrier names are real references; all shipments, vessel positions, delays and exceptions are synthetic demonstration data.**
+`database/seeders/DatabaseSeeder.php` creates ports, carriers, the four users above and sample shipments (on time, delayed LOW/MEDIUM/HIGH, delivered, booked, created, with exceptions). Seeding goes through the real service classes so all business rules apply. **Port names/coordinates and carrier names are real references; all shipments, vessel positions, delays and exceptions are synthetic demonstration data.**
 
 ## Configuration (`.env`)
 | Variable | Purpose |
@@ -98,9 +98,12 @@ php artisan migrate:fresh --seed
 | `CARGOTRACE_DELAY_LOW_MAX_HOURS` / `..._MEDIUM_MAX_HOURS` | Delay thresholds (6 / 24 hours) |
 | `SHOW_DEMO_ACCOUNTS` | Show demo accounts on the login page |
 | `EXTERNAL_API_TIMEOUT`, `WEATHER_BASE_URL`, `GEOCODING_BASE_URL`, `GEOCODING_USER_AGENT` | External API settings (set your own contact in the Nominatim user agent) |
-| `CARGOTRACE_SIMULATION`, `CARGOTRACE_SIMULATION_MODE`, `CARGOTRACE_SIMULATION_TIME_SCALE`, `CARGOTRACE_SIMULATION_AUTO_DELIVER` | Auto-shipping demo mode (default off; `time` mode follows the clock, `AUTO_DELIVER` records DELIVERED on arrival) |
+| `CARGOTRACE_SIMULATION`, `..._MODE`, `..._TIME_SCALE`, `..._STEP`, `..._AUTO_BOOK_MINUTES`, `..._AUTO_DELIVER`, `..._SPEED_KMH` | Auto-shipping demo mode (default off; `time` mode follows the clock, `AUTO_DELIVER` records DELIVERED on arrival) |
+| `MAIL_*` | SMTP settings for the e-mail verification link (Gmail: use an App Password, never your normal password) |
+| `ADMIN_REGISTRATION_CODE`, `OPERATOR_REGISTRATION_CODE` | Authorization codes for Admin / Logistics sign-up from the login page (empty = that role cannot self-register) |
+| `CONTACT_WHATSAPP`, `CONTACT_PHONE`, `CONTACT_INSTAGRAM`, `CONTACT_EMAIL` | "Contact admin" channels on the login/register pages (empty = hidden) |
 
-### Changing the delay thresholds (per-group scenario)
+### Changing the delay thresholds (configurable scenario)
 The delay rule lives in `App\Services\EtaService` and reads its limits from `config/cargotrace.php`, which reads `.env`. No code change is needed:
 
 ```env
@@ -139,7 +142,7 @@ Errors: `401` unauthenticated, `403` forbidden, `404` not found, `422` validatio
 | Shipments (CRUD, tracking, exceptions, delivery confirmation) | Pengiriman | per `ShipmentPolicy` |
 | Reports (+ PDF) | Laporan | all roles (customers see only their own shipments) |
 | Notifications | Notifikasi | all roles |
-| Carriers, Locations, Warehouses, Users | Pengangkut, Lokasi, Gudang, Pengguna | admin |
+| Carriers, Locations, Users | Pengangkut, Lokasi, Pengguna | admin |
 | Audit log | Log audit | admin |
 
 ## Tests
@@ -152,7 +155,7 @@ Tests use an in-memory SQLite database (see `phpunit.xml`), so they never touch 
 Password hashing (bcrypt) · auth middleware and server-side authorization (policies, role middleware) · Form Request validation · CSRF tokens on web forms · Blade escaping (XSS) and DOM `textContent` for map popups · Eloquent/query-builder bindings and whitelisted sort columns (SQL injection) · `$fillable` mass-assignment protection (`role` is never mass-assignable) · rate limiting on login, geocoding and API · delivery can only be confirmed by the owner (or an admin), enforced in `TrackingService` · `.env` and API keys are git-ignored.
 
 ## Deployment
-1. Provision PHP 8.2+, MySQL, Composer (shared hosting with SSH, VPS, or PaaS).
+1. Provision PHP 8.3+, MySQL, Composer (shared hosting with SSH, VPS, or PaaS).
 2. Point the web root to `public/`.
 3. `composer install --no-dev --optimize-autoloader`, create `.env` with `APP_ENV=production`, `APP_DEBUG=false`, the real `APP_URL`, DB credentials, and `SHOW_DEMO_ACCOUNTS=true` only for the demo.
 4. `php artisan key:generate && php artisan migrate --seed --force` (the last migration drops the legacy `payments` table if an older database still has it)
@@ -179,7 +182,7 @@ Password hashing (bcrypt) · auth middleware and server-side authorization (poli
 ## Scope: the UAS brief and what goes beyond it
 Everything required by the brief is implemented and mapped one by one in [`docs/ACCEPTANCE_CHECKLIST.md`](docs/ACCEPTANCE_CHECKLIST.md): roles, shipment lifecycle, tracking timeline, ETA/delay rule with configurable thresholds, exceptions, Leaflet map, external API (Open-Meteo, Nominatim), dashboard, search/filter/pagination, notifications, audit log, REST API with Sanctum, tests, Postman collection and documentation.
 
-Extras that are **not required** by the brief and are documented as such: warehouses (master data), the statistical delay forecast, auto-shipping demo mode, e-mail verification, 7-language UI, PWA and PDF reports. Payments, payment gateways and accounting were removed because the brief puts financial transactions out of scope.
+Extras that are **not required** by the brief and are documented as such: the statistical delay forecast, auto-shipping demo mode, e-mail verification, 7-language UI, PWA and PDF reports. Payments, payment gateways and accounting were removed because the brief puts financial transactions out of scope.
 
 ## Known limitations and future work
 - Tailwind, Leaflet and Chart.js are loaded from CDNs for simplicity; a production build with Vite would remove the runtime dependency.
@@ -188,7 +191,8 @@ Extras that are **not required** by the brief and are documented as such: wareho
 - Payments, invoicing and accounting are out of scope of the brief and are **not implemented** (the app never handles money).
 - Admin notifications are polled every 15 s (no WebSocket push).
 - Reopening a DELIVERED/CANCELLED shipment is not implemented.
-- Carriers, locations, warehouses and users have create and activate/deactivate, but no edit or delete screens.
+- Users can only be created and have their role changed (no edit or delete screen); carriers and locations support create, edit, activate/deactivate and delete.
+- The REST API issues tokens on `/api/register` and `/api/login` without requiring a verified e-mail, whereas the web UI requires verification.
 - E-mail notifications and Docker are not included.
 
 ## Attribution

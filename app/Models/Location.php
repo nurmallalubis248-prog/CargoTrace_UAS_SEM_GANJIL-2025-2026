@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Location extends Model
 {
-    public const TYPES = ['PORT', 'AIRPORT', 'WAREHOUSE', 'OTHER'];
+    public const TYPES = ['PORT', 'AIRPORT', 'OTHER'];
 
     protected $fillable = ['name', 'code', 'country', 'type', 'latitude', 'longitude', 'is_active'];
 

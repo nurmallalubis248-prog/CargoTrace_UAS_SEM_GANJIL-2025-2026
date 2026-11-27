@@ -65,7 +65,7 @@
 <body class="min-h-screen bg-matcha-50 text-ink-800">
 @php
     $user = auth()->user(); $unread = $user ? $user->appNotifications()->whereNull('read_at')->count() : 0;
-    // Ikon outline (sesuai desain sidebar): rumah, kotak, dokumen, lonceng, truk, pin, gudang, kalkulator, pengguna, riwayat
+    // Ikon outline (sesuai desain sidebar): rumah, kotak, dokumen, lonceng, truk, pin, kalkulator, pengguna, riwayat
     $ic = [
         'dashboard' => 'M2.25 12 11.2 3.05a1.13 1.13 0 0 1 1.6 0L21.75 12M4.5 9.75V19.5a.75.75 0 0 0 .75.75H9.75v-4.5h4.5v4.5h4.5a.75.75 0 0 0 .75-.75V9.75',
         'shipments' => 'm21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9',
@@ -73,14 +73,13 @@
         'notifications' => 'M14.86 17.08a23.85 23.85 0 0 0 5.45-1.31A8.97 8.97 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.97 8.97 0 0 1-2.31 6.02 23.85 23.85 0 0 0 5.45 1.31m5.72 0a24.26 24.26 0 0 1-5.72 0m5.72 0a3 3 0 1 1-5.72 0',
         'carriers'  => 'M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.38a1.13 1.13 0 0 1-1.13-1.13V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.13c.62 0 1.12-.5 1.12-1.13V14.25m-17.25 0V6.38c0-.62.5-1.13 1.13-1.13h9.74c.62 0 1.13.5 1.13 1.13v11.62m0-11.62h2.9c.3 0 .58.12.8.33l3.3 3.3c.2.2.33.5.33.8v3.62',
         'locations' => 'M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 0c0 7.5-9 11.25-9 11.25S3 18 3 10.5a9 9 0 1 1 18 0Z',
-        'warehouses'=> 'M3 21V9.5L12 4l9 5.5V21M7 21v-7h10v7M7 17.5h10M10 14v7M14 14v7',
         'users'     => 'M15 19.13a9.37 9.37 0 0 0 4.12-.95 4.13 4.13 0 0 0-7.53-2.5M15 19.13v-.01a8.97 8.97 0 0 1-12 0v-.01m12 .02a6.38 6.38 0 0 0-12 .02M12 7.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm7.5 1.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z',
         'audit'     => 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7.5V12l3 2',
     ];
     // Label bawaan (Indonesia) bila kamus i18n belum punya kuncinya
-    $labels = ['dashboard'=>'Dashboard','shipments'=>'Pengiriman','reports'=>'Laporan','notifications'=>'Notifikasi','carriers'=>'Pengangkut','locations'=>'Lokasi','warehouses'=>'Gudang','users'=>'Pengguna','audit'=>'Log Audit'];
+    $labels = ['dashboard'=>'Dashboard','shipments'=>'Pengiriman','reports'=>'Laporan','notifications'=>'Notifikasi','carriers'=>'Pengangkut','locations'=>'Lokasi','users'=>'Pengguna','audit'=>'Log Audit'];
     $links = [['dashboard','dashboard','dashboard','dashboard'], ['shipments','shipments.index','shipments.*','shipments'], ['reports','reports.index','reports.*','reports'], ['notifications','notifications.index','notifications.*','notifications']];
-    $adminLinks = $user->isAdmin() ? [['carriers','admin.carriers.index','admin.carriers.*','carriers'], ['locations','admin.locations.index','admin.locations.*','locations'], ['warehouses','admin.warehouses.index','admin.warehouses.*','warehouses'], ['users','admin.users.index','admin.users.*','users'], ['audit','admin.audit.index','admin.audit.*','audit']] : [];
+    $adminLinks = $user->isAdmin() ? [['carriers','admin.carriers.index','admin.carriers.*','carriers'], ['locations','admin.locations.index','admin.locations.*','locations'], ['users','admin.users.index','admin.users.*','users'], ['audit','admin.audit.index','admin.audit.*','audit']] : [];
 @endphp
 <div class="flex min-h-screen">
     {{-- LEFT SIDEBAR: gradasi pink -> hijau (desain CargoTrace). Semua menu fitur ada di sini --}}
@@ -113,7 +112,7 @@
                     @foreach($adminLinks as [$key, $r, $pattern, $icon])
                         <a href="{{ route($r) }}" class="side-link {{ request()->routeIs($pattern) ? 'side-link-active' : '' }}">
                             <svg class="shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $ic[$icon] }}"/></svg>
-                            <span {!! in_array($key, ['warehouses']) ? '' : 'data-i18n="'.$key.'"' !!}>{{ $labels[$key] }}</span>
+                            <span data-i18n="{{ $key }}">{{ $labels[$key] }}</span>
                         </a>
                     @endforeach
                 </nav>
@@ -203,7 +202,7 @@
             
             <nav class="flex gap-1 overflow-x-auto px-3 py-2 lg:hidden">
                 @foreach(array_merge($links, $adminLinks) as [$key, $r, $pattern, $icon])
-                    <a href="{{ route($r) }}" class="whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold {{ request()->routeIs($pattern) ? 'grad-brand text-white' : 'bg-matcha-100 text-matcha-800' }}" {!! in_array($key, ['warehouses']) ? '' : 'data-i18n="'.$key.'"' !!}>{{ $labels[$key] }}</a>
+                    <a href="{{ route($r) }}" class="whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold {{ request()->routeIs($pattern) ? 'grad-brand text-white' : 'bg-matcha-100 text-matcha-800' }}" data-i18n="{{ $key }}">{{ $labels[$key] }}</a>
                 @endforeach
             </nav>
         </header>

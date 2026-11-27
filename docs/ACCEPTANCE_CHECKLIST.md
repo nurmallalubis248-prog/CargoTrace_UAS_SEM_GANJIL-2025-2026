@@ -21,7 +21,7 @@ Maps the requirements of the "CargoTrace UAS Final Project Brief" (slides 2-24) 
 | JSON, 200/201/401/403/404/422, pagination, consistent errors without stack traces, Postman collection (slide 13) | `bootstrap/app.php`, API Resources, `postman/CargoTrace.postman_collection.json` | feature tests |
 | Service layer instead of logic in controllers (slide 15) | `ShipmentService`, `TrackingService`, `EtaService`, `ExceptionService` in `app/Services` | `docs/ARCHITECTURE.md` |
 | Security: password hashing, auth middleware, backend authorization, form requests, CSRF/XSS/SQL injection prevention, mass-assignment protection, no secrets in the repository (slide 16) | see README "Security" section; `.env` is git-ignored, `.env.example` is provided | `AuthTest`, `ShipmentApiTest` |
-| Group scenario parameters, e.g. delay threshold 12 / 18 / 24 h (slide 20, 23) | README "Changing the delay thresholds (per-group scenario)" | `EtaServiceTest` |
+| Configurable scenario parameters, e.g. delay threshold 12 / 18 / 24 h (slide 20, 23); this course has no group split, so the default 6 / 24 h from the brief's example rule is used | README "Changing the delay thresholds" | `EtaServiceTest` |
 
 ## Deliverables (slide 18, 22, 24)
 

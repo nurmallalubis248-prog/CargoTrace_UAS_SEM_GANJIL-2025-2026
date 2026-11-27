@@ -10,6 +10,13 @@
     @media (max-width: 1279px) { .ct-hero-art { display: none; } }
     .ct-hero-art svg { display: block; width: 100%; height: 100%; }
     .ct-add { position: absolute; right: 1.5rem; bottom: 1rem; z-index: 3; display: inline-flex; align-items: center; gap: .55rem; height: 2.9rem; padding: 0 1.5rem; border: 0; border-radius: 9999px; color: #fff; font-weight: 800; font-size: .9rem; cursor: pointer; background: linear-gradient(90deg, #FF6FAE, #F0508F); box-shadow: 0 12px 24px -10px rgba(233,30,140,.75); transition: transform .15s, box-shadow .15s; }
+    /* Layar lebar: ilustrasi di atas, tombol di bawahnya (rata kanan), tidak saling menimpa */
+    @media (min-width: 1280px) {
+        .ct-hero { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; row-gap: 0; }
+        .ct-hero .sh-title { grid-column: 1; grid-row: 1 / span 2; }
+        .ct-hero-art { grid-column: 2; grid-row: 1; height: 9.5rem; max-width: 40rem; align-self: end; }
+        .ct-add { position: static; grid-column: 2; grid-row: 2; justify-self: end; align-self: start; margin: .6rem 1.5rem 1rem 0; white-space: nowrap; }
+    }
     .ct-add:hover { transform: translateY(-1px); box-shadow: 0 16px 28px -10px rgba(233,30,140,.8); }
     .ct-add svg { width: 1.1rem; height: 1.1rem; }
     @media (max-width: 767px) {

@@ -24,7 +24,7 @@ All timestamps are stored and displayed in **UTC**.
 | Column | Type | Notes |
 |---|---|---|
 | name, code (unique), country (ISO-2) | string | |
-| type | string | PORT, AIRPORT, WAREHOUSE, OTHER |
+| type | string | PORT, AIRPORT, OTHER |
 | latitude / longitude | decimal(10,7) | validated -90..90 / -180..180 |
 | is_active | bool | |
 
@@ -34,7 +34,6 @@ All timestamps are stored and displayed in **UTC**.
 | shipment_number | string(30) unique | generated `CTyymmdd-XXXXX` |
 | reference_number | string null | customer PO / booking reference (searchable) |
 | customer_id, carrier_id, origin_id, destination_id, created_by | FK | |
-| warehouse_id | FK null | optional warehouse the cargo is assigned to (`nullOnDelete`) |
 | cargo_type | string | GENERAL, CONTAINER_FCL, CONTAINER_LCL, BULK, REFRIGERATED, LIQUID, HAZARDOUS |
 | weight_kg, volume_cbm | decimal | weight > 0 |
 | expected_departure_at, expected_arrival_at | datetime | plan; arrival must be after departure |
@@ -66,12 +65,3 @@ All timestamps are stored and displayed in **UTC**.
 
 ## audit_logs
 `user_id` (nullable), `action` (e.g. `shipment.created`), `entity_type`, `entity_id`, `changes` (JSON), `ip_address`, `created_at`.
-
-## warehouses
-| Column | Type | Notes |
-|---|---|---|
-| name | string | |
-| code | string(12) unique | |
-| location_id | FK null | linked location (`nullOnDelete`) |
-| capacity_kg | unsigned int | used for the utilisation figure in the admin warehouse page |
-| is_active | bool | |

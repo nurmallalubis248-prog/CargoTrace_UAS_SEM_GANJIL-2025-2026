@@ -43,10 +43,10 @@ class DatabaseSeeder extends Seeder
         'SGSIA' => ['Changi Airport (Singapore)', 'SG', 1.3644, 103.9915],
         'AEDXB' => ['Dubai International Airport', 'AE', 25.2532, 55.3657],
         'GBLHR' => ['London Heathrow Airport', 'GB', 51.4700, -0.4543],
-        'IDBDO' => ['Bandung (Warehouse)', 'ID', -6.9175, 107.6191],
-        'IDSUB' => ['Surabaya (Warehouse)', 'ID', -7.2575, 112.7521],
-        'IDMES' => ['Medan (Warehouse)', 'ID', 3.5952, 98.6722],
-        'IDPLM' => ['Palembang (Warehouse)', 'ID', -2.9761, 104.7754],
+        'IDBDO' => ['Bandung', 'ID', -6.9175, 107.6191],
+        'IDSUB' => ['Surabaya', 'ID', -7.2575, 112.7521],
+        'IDMES' => ['Medan', 'ID', 3.5952, 98.6722],
+        'IDPLM' => ['Palembang', 'ID', -2.9761, 104.7754],
     ];
 
     private const CARRIERS = [
@@ -96,9 +96,6 @@ class DatabaseSeeder extends Seeder
             'exception' => ['MISROUTED', 'HIGH', 'Truck diverted because of a road closure; new ETA issued.', 'INVESTIGATING']],
     ];
 
-    /** @var array<int,int> warehouse ids created in run(), used when seeding shipments */
-    private array $whIds = [];
-
     public function run(): void
     {
         $admin = $this->user('Admin CargoTrace', 'admin@cargotrace.test', User::ROLE_ADMIN);
@@ -112,19 +109,13 @@ class DatabaseSeeder extends Seeder
         foreach (self::LOCATIONS as $code => [$name, $country, $lat, $lng]) {
             $locations[$code] = Location::updateOrCreate(
                 ['code' => $code],
-                ['name' => $name, 'country' => $country, 'type' => str_contains($name, 'Airport') ? 'AIRPORT' : (str_contains($name, 'Warehouse') ? 'WAREHOUSE' : 'PORT'), 'latitude' => $lat, 'longitude' => $lng]
+                ['name' => $name, 'country' => $country, 'type' => str_contains($name, 'Airport') ? 'AIRPORT' : (in_array($code, ['IDBDO', 'IDSUB', 'IDMES', 'IDPLM'], true) ? 'OTHER' : 'PORT'), 'latitude' => $lat, 'longitude' => $lng]
             );
         }
 
         $carriers = [];
         foreach (self::CARRIERS as $code => $name) {
             $carriers[$code] = Carrier::updateOrCreate(['code' => $code], ['name' => $name, 'transport_mode' => in_array($code, self::AIR, true) ? 'AIR' : (in_array($code, self::ROAD, true) ? 'ROAD' : 'SEA')]);
-        }
-
-        $this->whIds = [];
-        foreach ([['JKT-WH', 'Jakarta Distribution Hub', 'IDJKT', 60000], ['SUB-WH', 'Surabaya Warehouse', 'IDSUB', 40000],
-                  ['MES-WH', 'Medan Warehouse', 'IDMES', 30000], ['BDO-WH', 'Bandung Warehouse', 'IDBDO', 25000]] as [$code, $name, $loc, $cap]) {
-            $this->whIds[] = \App\Models\Warehouse::updateOrCreate(['code' => $code], ['name' => $name, 'location_id' => ($locations[$loc] ?? null)?->id, 'capacity_kg' => $cap])->id;
         }
 
         if (Shipment::withTrashed()->exists()) {
@@ -178,7 +169,6 @@ class DatabaseSeeder extends Seeder
             'carrier_id' => $carriers[$d['carrier']]->id,
             'origin_id' => $origin->id,
             'destination_id' => $dest->id,
-            'warehouse_id' => $this->whIds[crc32($d['route'].$d['carrier']) % count($this->whIds)],
             'cargo_type' => $d['cargo'],
             'weight_kg' => $d['kg'],
             'expected_departure_at' => $dep->format($fmt),

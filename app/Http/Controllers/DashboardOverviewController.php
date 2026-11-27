@@ -158,7 +158,7 @@ class DashboardOverviewController extends Controller
     }
 
     /**
-     * Daftar lokasi aktif (pelabuhan, bandara, gudang) + jumlah pengiriman aktif dari tabel SQL.
+     * Daftar lokasi aktif (pelabuhan, bandara) + jumlah pengiriman aktif dari tabel SQL.
      * Cuaca/laut diambil browser dari Open-Meteo menurut koordinat lokasi.
      */
     public function locations(Request $request): JsonResponse

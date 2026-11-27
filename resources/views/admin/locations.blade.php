@@ -30,7 +30,6 @@
     .lc-tbl { min-width: 56rem; }
     .lc-type { display: inline-flex; align-items: center; gap: .45rem; padding: .35rem .85rem .35rem .65rem; border-radius: 9999px; font-size: .8rem; font-weight: 700; line-height: 1.1; }
     .lc-type svg { width: 1rem; height: 1rem; flex: none; }
-    .lc-t-WAREHOUSE { background: #FFE3EE; color: #E91E8C; }
     .lc-t-PORT { background: #DDF3C8; color: #2F6B12; }
     .lc-t-AIRPORT { background: #D6EBFF; color: #1D5FA8; }
     .lc-t-OTHER { background: #E9EAE6; color: #565E4E; }
@@ -56,11 +55,10 @@
     $hasCoords = collect(['lat_min', 'lat_max', 'lng_min', 'lng_max'])->contains(fn ($k) => $filters[$k] !== null);
     $reopen = old('_mode');
     $region = fn (string $cc) => class_exists(\Locale::class) ? (\Locale::getDisplayRegion('-'.$cc, 'en') ?: $cc) : $cc;
-    $typeLabel = ['PORT' => 'Port', 'AIRPORT' => 'Airport', 'WAREHOUSE' => 'Warehouse', 'OTHER' => 'Other'];
+    $typeLabel = ['PORT' => 'Port', 'AIRPORT' => 'Airport', 'OTHER' => 'Other'];
     $typeIco = [
         'PORT' => '<path d="M12 3v3m0 0a2 2 0 1 0 0 .01M12 8v13M5 14c0 3.9 3.1 7 7 7s7-3.1 7-7M5 14H3m18 0h-2M8 11h8"/>',
         'AIRPORT' => '<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5Z"/>',
-        'WAREHOUSE' => '<path d="M3 21V9.5L12 4l9 5.5V21M7 21v-7h10v7M10 14v7M14 14v7"/>',
         'OTHER' => '<path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 0c0 7.5-9 11.25-9 11.25S3 18 3 10.5a9 9 0 1 1 18 0Z"/>',
     ];
     $pin = 'M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 0c0 7.5-9 11.25-9 11.25S3 18 3 10.5a9 9 0 1 1 18 0Z';
@@ -339,7 +337,7 @@
     var updateUrl = @json(route('admin.locations.update', ['location' => '__ID__']));
     var deleteUrl = @json(route('admin.locations.destroy', ['location' => '__ID__']));
     var geoUrl = @json(route('geocode'));
-    var TYPES = { PORT: 'Port', AIRPORT: 'Airport', WAREHOUSE: 'Warehouse', OTHER: 'Other' };
+    var TYPES = { PORT: 'Port', AIRPORT: 'Airport', OTHER: 'Other' };
 
     // Nama negara mengikuti bahasa yang dipilih (Intl), cadangan: nama bahasa Inggris dari server
     function country(cc) { try { return new Intl.DisplayNames([lang()], { type: 'region' }).of(cc) || cc; } catch (e) { return null; } }

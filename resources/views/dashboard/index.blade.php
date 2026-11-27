@@ -139,7 +139,6 @@
                 <span class="text-ink-500">Lapisan:</span>
                 <label class="lyr"><input type="checkbox" data-lyr="PORT" checked> ⚓ Pelabuhan</label>
                 <label class="lyr"><input type="checkbox" data-lyr="AIRPORT" checked> ✈ Bandara</label>
-                <label class="lyr"><input type="checkbox" data-lyr="WAREHOUSE"> 🏭 Gudang</label>
                 <label class="lyr"><input type="checkbox" id="lyr-radar"> 🌧 Radar cuaca</label>
                 <label class="lyr"><input type="checkbox" id="lyr-sea"> ⚓ Peta laut</label>
                 <button type="button" id="cond-refresh" class="lyr" title="Muat ulang kondisi">⟳ Segarkan</button>
@@ -316,9 +315,9 @@
     /* ================= KONDISI GLOBAL: pelabuhan, bandara, cuaca, radar ================= */
     map.setMinZoom(2);
     const condLayer = L.layerGroup().addTo(map);
-    const COND = { locs: [], wx: {}, wave: {}, metar: {}, show: { PORT: true, AIRPORT: true, WAREHOUSE: false }, updated: null };
-    const TYPE_ICON = { PORT: '⚓', AIRPORT: '✈', WAREHOUSE: '🏭', OTHER: '📍' };
-    const TYPE_LABEL = { PORT: 'Pelabuhan', AIRPORT: 'Bandara', WAREHOUSE: 'Gudang', OTHER: 'Lokasi' };
+    const COND = { locs: [], wx: {}, wave: {}, metar: {}, show: { PORT: true, AIRPORT: true }, updated: null };
+    const TYPE_ICON = { PORT: '⚓', AIRPORT: '✈', OTHER: '📍' };
+    const TYPE_LABEL = { PORT: 'Pelabuhan', AIRPORT: 'Bandara', OTHER: 'Lokasi' };
     const WMO = { 0: 'Cerah', 1: 'Cerah berawan', 2: 'Berawan sebagian', 3: 'Berawan', 45: 'Berkabut', 48: 'Kabut beku', 51: 'Gerimis ringan', 53: 'Gerimis', 55: 'Gerimis lebat', 56: 'Gerimis beku', 57: 'Gerimis beku lebat',
         61: 'Hujan ringan', 63: 'Hujan', 65: 'Hujan lebat', 66: 'Hujan beku', 67: 'Hujan beku lebat', 71: 'Salju ringan', 73: 'Salju', 75: 'Salju lebat', 77: 'Butiran salju', 80: 'Hujan sesaat', 81: 'Hujan sesaat lebat', 82: 'Hujan sesaat sangat lebat',
         85: 'Salju sesaat', 86: 'Salju sesaat lebat', 95: 'Badai petir', 96: 'Badai petir + es', 99: 'Badai petir + es lebat' };

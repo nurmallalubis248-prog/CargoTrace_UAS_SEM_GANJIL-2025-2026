@@ -170,7 +170,6 @@ class ShipmentController extends Controller
     {
         return [
             'customers' => User::where('role', User::ROLE_CUSTOMER)->orderBy('name')->get(['id', 'name', 'email']),
-            'warehouses' => \App\Models\Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'carriers' => Carrier::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'locations' => Location::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
             'cargoTypes' => config('cargotrace.cargo_types'),

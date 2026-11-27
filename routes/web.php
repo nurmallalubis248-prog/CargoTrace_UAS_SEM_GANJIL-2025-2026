@@ -7,7 +7,6 @@ use App\Http\Controllers\Web\Admin\AuditLogController;
 use App\Http\Controllers\Web\Admin\CarrierController;
 use App\Http\Controllers\Web\Admin\LocationController;
 use App\Http\Controllers\Web\Admin\UserController;
-use App\Http\Controllers\Web\Admin\WarehouseController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\ExceptionController;
@@ -86,12 +85,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::post('users', [UserController::class, 'store'])->name('users.store');
         Route::patch('users/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
-
-        Route::get('warehouses', [WarehouseController::class, 'index'])->name('warehouses.index');
-        Route::post('warehouses', [WarehouseController::class, 'store'])->name('warehouses.store');
-        Route::patch('warehouses/{warehouse}/toggle', [WarehouseController::class, 'toggle'])->name('warehouses.toggle');
-        Route::put('warehouses/{warehouse}', [WarehouseController::class, 'update'])->name('warehouses.update');
-        Route::delete('warehouses/{warehouse}', [WarehouseController::class, 'destroy'])->name('warehouses.destroy');
 
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit.index');
     });

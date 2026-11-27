@@ -29,15 +29,6 @@
         </select>
     </div>
     <div>
-        <label class="label">Warehouse</label>
-        <select class="input" name="warehouse_id">
-            <option value="">No warehouse</option>
-            @foreach($warehouses as $wh)
-                <option value="{{ $wh->id }}" @selected((string) old('warehouse_id', $shipment->warehouse_id) === (string) $wh->id)>{{ $wh->name }}</option>
-            @endforeach
-        </select>
-    </div>
-    <div>
         <label class="label">Cargo type *</label>
         <select class="input" name="cargo_type" required>
             @foreach($cargoTypes as $k => $v)
