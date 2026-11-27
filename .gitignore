@@ -5,6 +5,7 @@
 /storage/*.key
 /storage/pail
 .env
+/storage/logs/*.log
 .env.backup
 .env.production
 .phpunit.result.cache
