@@ -5,6 +5,7 @@ $statusView = function ($s) {
     $st = $s->current_status->value;
     if ($s->is_delayed && ! in_array($st, ['DELIVERED', 'CANCELLED'], true)) { return ['Delayed', 'red']; }
     return match ($st) {
+        'PENDING' => ['Pending confirmation', 'orange'],
         'CREATED', 'BOOKED' => ['Awaiting departure', 'orange'],
         'PICKED_UP' => ['In process', 'blue'],
         'IN_TRANSIT' => ['In transit', 'green'],
@@ -54,7 +55,7 @@ $statusView = function ($s) {
                 <td data-no-i18n>{{ $s->carrier->name }}</td>
                 <td data-no-i18n>{{ $s->customer->name }}</td>
                 <td><span class="sh-badge sh-b-{{ $stColor }}"><i></i><span>{{ $stLabel }}</span></span></td>
-                <td class="sh-mono">{{ $s->expected_arrival_at->format('Y-m-d H:i') }}</td>
+                <td class="sh-mono">{{ $s->expected_arrival_at?->format('Y-m-d H:i') ?? '-' }}</td>
                 <td class="sh-mono">{{ $s->estimated_arrival_at?->format('Y-m-d H:i') ?? '-' }}</td>
                 <td>
                     @if($s->is_delayed && $s->current_status->value !== 'CANCELLED')

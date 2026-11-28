@@ -51,15 +51,22 @@ class ShipmentController extends Controller
     {
         Gate::authorize('create', Shipment::class);
 
-        return view('shipments.create', $this->formData() + ['shipment' => new Shipment()]);
+        // Customer: the Customer dropdown is hidden in the form and customer_id is filled with their own id on store.
+        return view('shipments.create', $this->formData() + [
+            'shipment' => new Shipment(),
+            'isCustomerForm' => (bool) request()->user()?->isCustomer(),
+        ]);
     }
 
     public function store(StoreShipmentRequest $request): RedirectResponse
     {
         $shipment = $this->shipments->create($request->validated(), $request->user());
 
-        return redirect()->route('shipments.show', $shipment)
-            ->with('success', "Shipment {$shipment->shipment_number} created.");
+        $message = $request->user()->isCustomer()
+            ? "Shipment request {$shipment->shipment_number} submitted and is waiting for confirmation."
+            : "Shipment {$shipment->shipment_number} created.";
+
+        return redirect()->route('shipments.show', $shipment)->with('success', $message);
     }
 
     public function show(Shipment $shipment): View
@@ -148,14 +155,32 @@ class ShipmentController extends Controller
     {
         Gate::authorize('update', $shipment);
 
-        return view('shipments.edit', $this->formData() + ['shipment' => $shipment->load('items')]);
+        return view('shipments.edit', $this->formData() + ['shipment' => $shipment->load('items'), 'isCustomerForm' => false]);
     }
 
     public function update(UpdateShipmentRequest $request, Shipment $shipment): RedirectResponse
     {
         $this->shipments->update($shipment, $request->validated(), $request->user());
 
+        // "Save and approve": complete the request data and process it in one step.
+        if ($request->boolean('approve') && Gate::forUser($request->user())->allows('approve', $shipment->refresh())) {
+            $this->shipments->approve($shipment, $request->user());
+
+            return redirect()->route('shipments.show', $shipment)
+                ->with('success', "Shipment {$shipment->shipment_number} approved and is now being processed.");
+        }
+
         return redirect()->route('shipments.show', $shipment)->with('success', 'Shipment updated.');
+    }
+
+    /** Admin / operator process a customer request: PENDING -> BOOKED, notifying the customer and the other staff role. */
+    public function approve(Request $request, Shipment $shipment): RedirectResponse
+    {
+        Gate::authorize('approve', $shipment);
+        $this->shipments->approve($shipment, $request->user());
+
+        return redirect()->route('shipments.show', $shipment)
+            ->with('success', "Shipment {$shipment->shipment_number} approved and is now being processed.");
     }
 
     public function destroy(Shipment $shipment): RedirectResponse

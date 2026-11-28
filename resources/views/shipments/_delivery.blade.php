@@ -22,7 +22,11 @@
             @elseif($arrived)
                 <p class="text-xs text-ink-500">Waiting for the customer to confirm receipt.</p>
             @else
-                <p class="text-sm text-ink-500">{{ $shipment->current_status->value === 'CANCELLED' ? 'This shipment was cancelled.' : 'On its way. Delivery is recorded automatically on arrival.' }}</p>
+                <p class="text-sm text-ink-500">{{ match ($shipment->current_status->value) {
+                    'CANCELLED' => 'This shipment was cancelled.',
+                    'PENDING' => 'Waiting for confirmation from an admin or operator.',
+                    default => 'On its way. Delivery is recorded automatically on arrival.',
+                } }}</p>
             @endif
         </div>
     </div>

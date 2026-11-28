@@ -4,6 +4,8 @@ namespace App\Enums;
 
 /**
  * Shipment lifecycle state machine.
+ * PENDING: pengajuan dari customer yang menunggu ditinjau admin/operator (belum masuk alur pengiriman).
+ *   PENDING -> BOOKED (disetujui/diproses staf) atau CANCELLED.
  * CREATED -> BOOKED -> PICKED_UP -> IN_TRANSIT -> ARRIVED -> DELIVERED
  * ARRIVED: the cargo reached the destination; it stays on the live map until delivery is recorded.
  * DELIVERED: delivered to the destination. With auto-delivery (SimulationService) this happens by itself on arrival;
@@ -12,6 +14,7 @@ namespace App\Enums;
  */
 enum ShipmentStatus: string
 {
+    case PENDING = 'PENDING';
     case CREATED = 'CREATED';
     case BOOKED = 'BOOKED';
     case PICKED_UP = 'PICKED_UP';
@@ -24,6 +27,7 @@ enum ShipmentStatus: string
     public function allowedNext(): array
     {
         return match ($this) {
+            self::PENDING => [self::BOOKED, self::CANCELLED],
             self::CREATED => [self::BOOKED, self::CANCELLED],
             self::BOOKED => [self::PICKED_UP, self::CANCELLED],
             self::PICKED_UP => [self::IN_TRANSIT],
@@ -47,6 +51,7 @@ enum ShipmentStatus: string
     public function badgeClass(): string
     {
         return match ($this) {
+            self::PENDING => 'bg-amber-100 text-amber-700',
             self::CREATED => 'bg-ink-100 text-ink-700',
             self::BOOKED => 'bg-sakura-100 text-sakura-700',
             self::PICKED_UP => 'bg-amber-100 text-amber-700',

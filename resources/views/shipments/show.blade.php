@@ -7,11 +7,24 @@
     @include('partials.badge', ['class' => $shipment->current_status->badgeClass(), 'text' => $shipment->current_status->value])
     @include('partials.delay', ['shipment' => $shipment])
     <div class="ml-auto flex gap-2">
+        @can('approve', $shipment)
+            @writable
+            @if($shipment->expected_departure_at && $shipment->expected_arrival_at)
+                <form method="POST" action="{{ route('shipments.approve', $shipment) }}">
+                    @csrf
+                    <button class="btn-accent" type="submit">Approve and process</button>
+                </form>
+            @else
+                {{-- The schedule is set by whoever processes the request: go to the edit form first. --}}
+                <a class="btn-accent" href="{{ route('shipments.edit', $shipment) }}">Approve and process</a>
+            @endif
+            @endwritable
+        @endcan
         @can('update', $shipment)
             <a class="btn-light" href="{{ route('shipments.edit', $shipment) }}">Edit</a>
         @endcan
         @can('delete', $shipment)
-            @if($shipment->current_status->value === 'CREATED')
+            @if(in_array($shipment->current_status->value, ['PENDING', 'CREATED'], true))
                 <form method="POST" action="{{ route('shipments.destroy', $shipment) }}" onsubmit="return confirm('Delete this shipment?');">
                     @csrf @method('DELETE')
                     <button class="btn-danger" type="submit">Delete</button>
@@ -21,6 +34,16 @@
         <a class="btn-light" href="{{ route('shipments.index') }}">Back</a>
     </div>
 </div>
+
+@if($shipment->current_status->value === 'PENDING')
+    <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+        @if(auth()->user()->isStaff())
+            This shipment request is waiting for confirmation. Set the departure and arrival dates, complete the data if needed, then approve it.
+        @else
+            Your shipment request is waiting for confirmation from an admin or operator.
+        @endif
+    </div>
+@endif
 
 <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
     <div class="card lg:col-span-2">
@@ -33,7 +56,7 @@
                     <span class="text-ink-600">{{ $item->quantity }} &times;@if($item->weight_kg) &middot; {{ rtrim(rtrim(number_format($item->weight_kg, 2, '.', ''), '0'), '.') }} kg @endif @if($item->volume_cbm) &middot; {{ rtrim(rtrim(number_format($item->volume_cbm, 2, '.', ''), '0'), '.') }} m³ @endif</span>
                 </div>
             @empty
-                <p class="text-sm text-ink-500">No item name has been entered for this shipment.@can('update', $shipment) <a class="font-semibold underline" href="{{ route('shipments.edit', $shipment) }}">Add it</a>@endcan</p>
+                <p class="text-sm text-ink-500">No item name has been entered for this shipment.@can('update', $shipment)@writable <a class="font-semibold underline" href="{{ route('shipments.edit', $shipment) }}">Add it</a>@endwritable @endcan</p>
             @endforelse
             <p class="mt-2 text-xs text-ink-500">{{ config('cargotrace.cargo_types.'.$shipment->cargo_type, $shipment->cargo_type) }} &middot; {{ number_format($shipment->weight_kg, 2) }} kg @if($shipment->volume_cbm !== null) &middot; {{ number_format($shipment->volume_cbm, 2) }} m³ @endif</p>
         </div>
@@ -47,9 +70,9 @@
             <div><dt class="label">Weight</dt><dd>{{ number_format($shipment->weight_kg, 2) }} kg</dd></div>
             <div><dt class="label">Volume</dt><dd>{{ $shipment->volume_cbm !== null ? number_format($shipment->volume_cbm, 2).' m³' : '-' }}</dd></div>
             <div><dt class="label">Created by</dt><dd>{{ $shipment->creator->name }}</dd></div>
-            <div><dt class="label">Expected departure</dt><dd>{{ $shipment->expected_departure_at->format('Y-m-d H:i') }} UTC</dd></div>
-            <div><dt class="label">Expected arrival</dt><dd>{{ $shipment->expected_arrival_at->format('Y-m-d H:i') }} UTC</dd></div>
-            <div><dt class="label">ETA</dt><dd>{{ $shipment->estimated_arrival_at?->format('Y-m-d H:i') ?? '-' }} UTC</dd></div>
+            <div><dt class="label">Expected departure</dt><dd>{{ $shipment->expected_departure_at ? $shipment->expected_departure_at->format('Y-m-d H:i').' UTC' : '-' }}</dd></div>
+            <div><dt class="label">Expected arrival</dt><dd>{{ $shipment->expected_arrival_at ? $shipment->expected_arrival_at->format('Y-m-d H:i').' UTC' : '-' }}</dd></div>
+            <div><dt class="label">ETA</dt><dd>{{ $shipment->estimated_arrival_at ? $shipment->estimated_arrival_at->format('Y-m-d H:i').' UTC' : '-' }}</dd></div>
             <div><dt class="label">Actual arrival</dt><dd>{{ $shipment->actual_arrival_at?->format('Y-m-d H:i') ?? '-' }}</dd></div>
             <div class="col-span-2"><dt class="label">Current location</dt>
                 <dd>{{ $shipment->current_location_label ?? 'Unknown' }}
@@ -185,7 +208,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="label">Known location</label>
-                                <select class="input" name="location_id">
+                                <select class="input" name="location_id" data-searchable>
                                     <option value="">None</option>
                                     @foreach($locations as $l)<option value="{{ $l->id }}">{{ $l->name }}</option>@endforeach
                                 </select>

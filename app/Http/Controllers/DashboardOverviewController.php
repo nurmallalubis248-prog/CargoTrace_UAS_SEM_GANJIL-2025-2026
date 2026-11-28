@@ -20,7 +20,7 @@ class DashboardOverviewController extends Controller
     private const ICAO = ['SGSIA' => 'WSSS', 'AEDXB' => 'OMDB', 'IDCGK' => 'WIII'];
 
     private const STATUS_LABEL = [
-        'CREATED' => 'Dibuat', 'BOOKED' => 'Dipesan', 'PICKED_UP' => 'Diambil',
+        'PENDING' => 'Menunggu Konfirmasi', 'CREATED' => 'Dibuat', 'BOOKED' => 'Dipesan', 'PICKED_UP' => 'Diambil',
         'IN_TRANSIT' => 'Dalam Perjalanan', 'ARRIVED' => 'Tiba', 'DELIVERED' => 'Terkirim',
     ];
 
@@ -116,7 +116,7 @@ class DashboardOverviewController extends Controller
             else { $tone = 'gray'; $label = self::STATUS_LABEL[$r->current_status] ?? $r->current_status; }
             return ['url' => route('shipments.show', $r->id), 'number' => $r->shipment_number,
                 'route' => $r->origin.' → '.$r->destination, 'tone' => $tone, 'label' => $label,
-                'eta' => Carbon::parse($eta, 'UTC')->locale('id')->translatedFormat('d M')];
+                'eta' => $eta ? Carbon::parse($eta, 'UTC')->locale('id')->translatedFormat('d M') : '-'];
         })->values();
 
         // ---- Top Rute (3 terbanyak, % dari total pengiriman)

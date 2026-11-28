@@ -16,6 +16,16 @@ class StoreShipmentRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        // A customer can only request a shipment for themselves: customer_id always comes from the session, never from input.
+        if ($this->user()?->isCustomer()) {
+            $this->merge(['customer_id' => $this->user()->id]);
+            // The schedule is set by the admin/operator who processes the request; ignore anything sent by the customer.
+            $this->request->remove('expected_departure_at');
+            $this->request->remove('expected_arrival_at');
+            $this->query->remove('expected_departure_at');
+            $this->query->remove('expected_arrival_at');
+        }
+
         // Drop empty item rows coming from the HTML form.
         if (is_array($this->input('items'))) {
             $this->merge([
@@ -28,6 +38,8 @@ class StoreShipmentRequest extends FormRequest
 
     public function rules(): array
     {
+        $isRequest = (bool) $this->user()?->isCustomer();
+
         return [
             'reference_number' => ['nullable', 'string', 'max:50'],
             'customer_id' => ['required', 'integer', Rule::exists('users', 'id')->where('role', 'customer')],
@@ -37,8 +49,8 @@ class StoreShipmentRequest extends FormRequest
             'cargo_type' => ['required', Rule::in(array_keys(config('cargotrace.cargo_types')))],
             'weight_kg' => ['required', 'numeric', 'gt:0', 'max:99999999'],
             'volume_cbm' => ['nullable', 'numeric', 'gt:0', 'max:99999999'],
-            'expected_departure_at' => ['required', 'date'],
-            'expected_arrival_at' => ['required', 'date', 'after:expected_departure_at'],
+            'expected_departure_at' => $isRequest ? ['nullable'] : ['required', 'date'],
+            'expected_arrival_at' => $isRequest ? ['nullable'] : ['required', 'date', 'after:expected_departure_at'],
             // Form web: minimal 1 barang wajib diisi. API (dan PATCH parsial) tetap opsional seperti sebelumnya.
             'items' => ($this->is('api/*')) ? ['nullable', 'array', 'max:50'] : ['required', 'array', 'min:1', 'max:50'],
             'items.*.description' => ['required', 'string', 'max:255'],

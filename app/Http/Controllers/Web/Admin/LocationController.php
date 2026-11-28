@@ -39,7 +39,10 @@ class LocationController extends Controller
             ->when($filters['lat_max'] !== null, fn ($q) => $q->where('latitude', '<=', $filters['lat_max']))
             ->when($filters['lng_min'] !== null, fn ($q) => $q->where('longitude', '>=', $filters['lng_min']))
             ->when($filters['lng_max'] !== null, fn ($q) => $q->where('longitude', '<=', $filters['lng_max']))
-            ->orderBy('name')
+            // Urut berdasarkan urutan input: data lama di atas, data baru di paling bawah.
+            // Ganti ke ->orderByDesc('id') kalau mau data terbaru di paling atas,
+            // atau ->orderBy('name') untuk urut abjad.
+            ->orderBy('id')
             ->paginate($filters['per_page'])
             ->withQueryString();
 

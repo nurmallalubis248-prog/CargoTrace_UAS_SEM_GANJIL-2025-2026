@@ -138,6 +138,9 @@ class SimulationService
             if (! $shipment || ! $shipment->origin || ! $shipment->destination) {
                 break;
             }
+            if (! $shipment->expected_departure_at || ! $shipment->expected_arrival_at) {
+                break;   // belum ada jadwal (pengajuan customer menunggu admin/operator)
+            }
 
             [$departure, $arrival] = $this->schedule($shipment);
             $now = now();

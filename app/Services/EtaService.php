@@ -49,6 +49,13 @@ class EtaService
         }
 
         $expected = $shipment->expected_arrival_at;
+        if (! $expected) {
+            // Customer request still waiting for its schedule (set by the admin/operator on approval).
+            return [
+                'is_delayed' => false, 'delay_hours' => 0.0, 'severity' => null,
+                'reason' => 'Schedule not set yet; delay is not evaluated.',
+            ];
+        }
         $delivered = in_array($shipment->current_status, [ShipmentStatus::ARRIVED, ShipmentStatus::DELIVERED], true) && $shipment->actual_arrival_at;
         $compared = $delivered ? $shipment->actual_arrival_at : ($shipment->estimated_arrival_at ?? $expected);
         $label = $delivered ? 'Actual arrival' : 'Estimated arrival (ETA)';

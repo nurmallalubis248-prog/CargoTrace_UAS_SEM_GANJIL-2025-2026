@@ -139,6 +139,7 @@
                 <span class="text-ink-500">Lapisan:</span>
                 <label class="lyr"><input type="checkbox" data-lyr="PORT" checked> ⚓ Pelabuhan</label>
                 <label class="lyr"><input type="checkbox" data-lyr="AIRPORT" checked> ✈ Bandara</label>
+                <label class="lyr"><input type="checkbox" data-lyr="OTHER" checked> 📍 Terminal</label>
                 <label class="lyr"><input type="checkbox" id="lyr-radar"> 🌧 Radar cuaca</label>
                 <label class="lyr"><input type="checkbox" id="lyr-sea"> ⚓ Peta laut</label>
                 <button type="button" id="cond-refresh" class="lyr" title="Muat ulang kondisi">⟳ Segarkan</button>
@@ -249,7 +250,7 @@
             const brg = dest ? CT.bearing(ll, dest) : 0;
             const isDone = p.status === 'DELIVERED';
             const m = CT.vehicle(p.mode, ll, p.delayed, brg, isDone ? 'done' : 'moving').bindPopup(popup(p));
-            if (p.label) { CT.label(m, p.label, -24, 'ct-label-veh'); }   // nama lokasi terakhir (tampil saat zoom >= 4)
+            if (p.label) { CT.label(m, p.label, -24, 'ct-label-veh'); }
             staticMk[p.id] = m;
             if (dest) {
                 specs[p.id] = { from: (p.origin_lat != null && p.origin_lng != null) ? [Number(p.origin_lat), Number(p.origin_lng)] : ll, here: ll, dest: dest,
@@ -263,7 +264,7 @@
                 if (!seenDest[key]) {
                     seenDest[key] = true;
                     const pn = CT.pin(dest).bindPopup(CT.tx('Destination') + ': ' + (p.dest_name || p.dest_country || '')).addTo(overviewLayer);
-                    if (p.dest_name || p.dest_country) { CT.label(pn, p.dest_name || p.dest_country, -38); }   // nama tujuan
+                    if (p.dest_name || p.dest_country) { CT.label(pn, p.dest_name || p.dest_country, -38); }
                 }
                 bounds.push(dest);
             }
@@ -299,7 +300,7 @@
         const sync = (on) => {
             wrap.classList.toggle('is-fs', on);
             btn.title = on ? 'Keluar layar penuh' : 'Layar penuh'; btn.setAttribute('aria-label', btn.title); btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-            setTimeout(() => map.invalidateSize(), 150);   // Leaflet menghitung ulang ukuran peta
+            setTimeout(() => map.invalidateSize(), 150);
         };
         const fallbackToggle = () => { const on = !wrap.classList.contains('map-fs-fallback'); wrap.classList.toggle('map-fs-fallback', on); sync(on); };
         btn.addEventListener('click', () => {
@@ -312,23 +313,20 @@
     })();
 
 
-    /* ================= KONDISI GLOBAL: pelabuhan, bandara, cuaca, radar ================= */
+    /* ================= KONDISI GLOBAL: pelabuhan, bandara, terminal, cuaca, radar ================= */
     map.setMinZoom(2);
     const condLayer = L.layerGroup().addTo(map);
-    const COND = { locs: [], wx: {}, wave: {}, metar: {}, show: { PORT: true, AIRPORT: true }, updated: null };
+    const COND = { locs: [], wx: {}, wave: {}, metar: {}, show: { PORT: true, AIRPORT: true, OTHER: true }, updated: null };
     const TYPE_ICON = { PORT: '⚓', AIRPORT: '✈', OTHER: '📍' };
-    const TYPE_LABEL = { PORT: 'Pelabuhan', AIRPORT: 'Bandara', OTHER: 'Lokasi' };
+    const TYPE_LABEL = { PORT: 'Pelabuhan', AIRPORT: 'Bandara', OTHER: 'Terminal / Lokasi' };
     const WMO = { 0: 'Cerah', 1: 'Cerah berawan', 2: 'Berawan sebagian', 3: 'Berawan', 45: 'Berkabut', 48: 'Kabut beku', 51: 'Gerimis ringan', 53: 'Gerimis', 55: 'Gerimis lebat', 56: 'Gerimis beku', 57: 'Gerimis beku lebat',
         61: 'Hujan ringan', 63: 'Hujan', 65: 'Hujan lebat', 66: 'Hujan beku', 67: 'Hujan beku lebat', 71: 'Salju ringan', 73: 'Salju', 75: 'Salju lebat', 77: 'Butiran salju', 80: 'Hujan sesaat', 81: 'Hujan sesaat lebat', 82: 'Hujan sesaat sangat lebat',
         85: 'Salju sesaat', 86: 'Salju sesaat lebat', 95: 'Badai petir', 96: 'Badai petir + es', 99: 'Badai petir + es lebat' };
     const LV_TXT = ['Normal', 'Waspada', 'Gangguan'];
 
-    // Ambang kepadatan pelabuhan: jumlah kapal BERLABUH (antre) dalam radius 30 km. Ubah sesuai ukuran pelabuhan.
     const FLT = { VFR: 0, MVFR: 1, IFR: 2, LIFR: 2 };
     const FLT_TXT = { VFR: 'VFR (cuaca baik)', MVFR: 'MVFR (jarak pandang menurun)', IFR: 'IFR (instrumen)', LIFR: 'LIFR (sangat rendah)' };
 
-    // Penilaian kondisi: cuaca/ombak (Open-Meteo) + METAR resmi (bandara).
-    // Ini indikator operasional, bukan pengganti NOTAM / informasi resmi otoritas pelabuhan.
     function assess(loc, w, wave) {
         const mt = COND.metar[loc.id];
         if (!w && !mt) { return { lv: 0, why: ['Data cuaca belum tersedia'], unknown: true }; }
@@ -348,8 +346,9 @@
         return { lv: lv, why: why };
     }
 
-    function condPopup(loc, a) {
-        const w = COND.wx[loc.id], wave = COND.wave[loc.id];
+    function condPopup(loc, a, customWx, customWave) {
+        const w = customWx !== undefined ? customWx : COND.wx[loc.id];
+        const wave = customWave !== undefined ? customWave : COND.wave[loc.id];
         const rows = [];
         if (w) {
             rows.push(['Cuaca', esc(WMO[w.weather_code] || '-') + ', ' + Math.round(w.temperature_2m) + '°C']);
@@ -369,14 +368,14 @@
         rows.push(['Terlambat / eksepsi', loc.delayed + ' / ' + loc.open_exceptions]);
         const color = ['#3FAE49', '#F5A524', '#E5484D'][a.lv];
         return '<div class="cond-pop"><b>' + esc(loc.name) + '</b> <span style="color:#7a8270">(' + esc(loc.code) + ' · ' + esc(loc.country) + ')</span>'
-            + '<div style="margin:3px 0"><span style="background:' + color + ';color:#fff;border-radius:9999px;padding:1px 8px;font-weight:700">' + TYPE_LABEL[loc.type] + ': ' + (a.unknown ? 'Tidak ada data' : LV_TXT[a.lv]) + '</span></div>'
+            + '<div style="margin:3px 0"><span style="background:' + color + ';color:#fff;border-radius:9999px;padding:1px 8px;font-weight:700">' + (TYPE_LABEL[loc.type] || 'Lokasi') + ': ' + (a.unknown ? 'Tidak ada data' : LV_TXT[a.lv]) + '</span></div>'
             + (a.why.length && !a.unknown ? '<div style="font-size:11px;color:#555">' + esc(a.why.join(' · ')) + '</div>' : '')
             + '<table style="margin-top:4px;font-size:12px">' + rows.map((r) => '<tr><td style="color:#7a8270">' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</table></div>';
     }
 
     function paintConditions() {
         condLayer.clearLayers();
-        const tally = { PORT: [0, 0, 0], AIRPORT: [0, 0, 0] };
+        const tally = { PORT: [0, 0, 0], AIRPORT: [0, 0, 0], OTHER: [0, 0, 0] };
         COND.locs.forEach((loc) => {
             const a = assess(loc, COND.wx[loc.id], COND.wave[loc.id]);
             if (tally[loc.type] && !a.unknown) { tally[loc.type][a.lv]++; }
@@ -385,7 +384,7 @@
             L.marker([Number(loc.latitude), Number(loc.longitude)], { icon: icon, zIndexOffset: 200 }).bindPopup(condPopup(loc, a), { maxWidth: 280 }).bindTooltip(loc.name + ' · ' + (a.unknown ? '–' : LV_TXT[a.lv]), { direction: 'top' }).addTo(condLayer);
         });
         const chip = (label, t) => '<span class="cond-chip">' + label + ' <span style="color:#3FAE49">● ' + t[0] + '</span> <span style="color:#F5A524">● ' + t[1] + '</span> <span style="color:#E5484D">● ' + t[2] + '</span></span>';
-        $('cond-summary').innerHTML = chip('⚓ Pelabuhan', tally.PORT) + chip('✈ Bandara', tally.AIRPORT)
+        $('cond-summary').innerHTML = chip('⚓ Pelabuhan', tally.PORT) + chip('✈ Bandara', tally.AIRPORT) + chip('📍 Terminal', tally.OTHER)
             + '<span class="text-ink-500">Cuaca &amp; laut: Open-Meteo · METAR: NOAA' + (COND.updated ? ' · diperbarui ' + COND.updated : '') + '</span>';
     }
 
@@ -401,14 +400,16 @@
             const wx = asArr(await OM('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&current=temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,weather_code,visibility&wind_speed_unit=kmh&timezone=UTC'));
             COND.locs.forEach((l, i) => { COND.wx[l.id] = wx[i] && wx[i].current ? wx[i].current : null; });
         } catch (e) { console.warn('Cuaca gagal dimuat', e); }
-        try {   // METAR resmi bandara, lewat server Laravel (cache 10 menit)
+        try {
             const mr = await fetch('{{ route('dashboard.metar') }}', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
             COND.metar = mr.ok ? await mr.json() : {};
         } catch (e) { console.warn('METAR gagal dimuat', e); }
-        try {   // tinggi ombak hanya untuk pelabuhan
+        try {
             const ports = COND.locs.filter((l) => l.type === 'PORT');
-            const m = asArr(await OM('https://marine-api.open-meteo.com/v1/marine?latitude=' + ports.map((l) => Number(l.latitude).toFixed(3)).join(',') + '&longitude=' + ports.map((l) => Number(l.longitude).toFixed(3)).join(',') + '&current=wave_height&timezone=UTC'));
-            ports.forEach((l, i) => { const v = m[i] && m[i].current ? m[i].current.wave_height : null; COND.wave[l.id] = (v == null) ? null : Number(v); });
+            if (ports.length) {
+                const m = asArr(await OM('https://marine-api.open-meteo.com/v1/marine?latitude=' + ports.map((l) => Number(l.latitude).toFixed(3)).join(',') + '&longitude=' + ports.map((l) => Number(l.longitude).toFixed(3)).join(',') + '&current=wave_height&timezone=UTC'));
+                ports.forEach((l, i) => { const v = m[i] && m[i].current ? m[i].current.wave_height : null; COND.wave[l.id] = (v == null) ? null : Number(v); });
+            }
         } catch (e) { console.warn('Data laut gagal dimuat', e); }
         COND.updated = new Date().toISOString().slice(11, 16) + ' UTC';
         paintConditions();
@@ -416,6 +417,62 @@
     document.querySelectorAll('#layer-toggles input[data-lyr]').forEach((c) => c.addEventListener('change', () => { COND.show[c.dataset.lyr] = c.checked; paintConditions(); }));
     $('cond-refresh').addEventListener('click', () => loadConditions().catch(() => {}));
     setInterval(() => { if (!document.hidden) { loadConditions().catch(() => {}); } }, 600000);
+
+    /* ---- Klik titik mana saja di peta (Pelabuhan / Bandara / Terminal / Lokasi lain) ---- */
+    let freeClickPopup = null;
+    map.on('click', async function (e) {
+        const lat = Number(e.latlng.lat.toFixed(6));
+        const lng = Number(e.latlng.lng.toFixed(6));
+
+        const nearExisting = COND.locs.some((l) => map.distance([lat, lng], [Number(l.latitude), Number(l.longitude)]) < 2000);
+        if (nearExisting) { return; }
+
+        if (freeClickPopup) { map.closePopup(freeClickPopup); }
+        freeClickPopup = L.popup({ maxWidth: 290 })
+            .setLatLng([lat, lng])
+            .setContent('<div class="cond-pop" style="font-size:12px">⏳ Memuat nama lokasi &amp; cuaca...</div>')
+            .openOn(map);
+
+        try {
+            const [geo, wxRes, waveRes] = await Promise.all([
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=id`)
+                    .then((r) => r.ok ? r.json() : null).catch(() => null),
+                OM(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m,visibility,precipitation&wind_speed_unit=kmh&timezone=UTC`).catch(() => null),
+                OM(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height&timezone=UTC`).catch(() => null),
+            ]);
+
+            const rawName = (geo && (geo.name || (geo.address && (geo.address.aerodrome || geo.address.harbour || geo.address.bus_station || geo.address.station || geo.address.suburb || geo.address.city || geo.address.town || geo.address.county)))) || `Titik ${lat}, ${lng}`;
+            const countryCode = (geo && geo.address && geo.address.country_code) ? geo.address.country_code.toUpperCase() : 'ID';
+            const lower = (rawName + ' ' + ((geo && geo.type) || '') + ' ' + ((geo && geo.category) || '')).toLowerCase();
+
+            let detectedType = 'OTHER';
+            if (/bandara|airport|aerodrome|runway|lapangan terbang/.test(lower)) { detectedType = 'AIRPORT'; }
+            else if (/pelabuhan|port|harbour|harbor|dermaga|ferry|jetty|pier/.test(lower)) { detectedType = 'PORT'; }
+
+            const w = wxRes && wxRes.current ? wxRes.current : null;
+            const wave = waveRes && waveRes.current && waveRes.current.wave_height != null ? Number(waveRes.current.wave_height) : null;
+
+            const fakeLoc = {
+                id: 'click_' + Date.now(),
+                name: rawName,
+                code: 'OSM',
+                country: countryCode,
+                type: detectedType,
+                active_in: 0,
+                active_out: 0,
+                delayed: 0,
+                open_exceptions: 0,
+            };
+
+            const assessment = assess(fakeLoc, w, wave);
+            const html = condPopup(fakeLoc, assessment, w, wave)
+                .replace('</div>', '<div style="margin-top:6px;font-size:10px;color:#7a8270">📍 Titik peta OpenStreetMap (' + lat + ', ' + lng + ')</div></div>');
+
+            freeClickPopup.setContent(html);
+        } catch (err) {
+            freeClickPopup.setContent('<div class="cond-pop" style="color:#E5484D">Gagal memuat data cuaca lokasi ini.</div>');
+        }
+    });
 
     /* ---- Radar cuaca (RainViewer) & peta laut (OpenSeaMap) ---- */
     let radarLayer = null;
@@ -440,7 +497,6 @@
     function fill(ctx, color) { const g = ctx.createLinearGradient(0, 0, 0, 240); g.addColorStop(0, color + '66'); g.addColorStop(1, color + '05'); return g; }
 
     function renderOverview(d) {
-        // KPI + perubahan + garis kecil
         ['total', 'transit', 'delivered', 'delayed'].forEach((k) => {
             const v = d.kpi[k]; $('kpi-' + k).textContent = v.value;
             const e = $('kpi-' + k + '-d');
@@ -453,7 +509,6 @@
                 s.innerHTML = '<polyline fill="none" stroke="' + col + '" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="' + pts + '"/>';
             } else { s.innerHTML = ''; }
         });
-        // Ringkasan Kinerja (garis)
         const ctx = $('chart-perf').getContext('2d');
         mk('chart-perf', { type: 'line', data: { labels: d.trend.labels, datasets: [
             { label: 'Pengiriman', data: d.trend.shipments, borderColor: PINK, backgroundColor: fill(ctx, PINK), fill: true, tension: .4, pointRadius: 3, pointBackgroundColor: '#fff', pointBorderColor: PINK },
@@ -461,29 +516,23 @@
             options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
                 plugins: { legend: { position: 'top', labels: { usePointStyle: true, font: { family: 'Manrope' } } } },
                 scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: grid }, x: { grid: { display: false }, ticks: { maxTicksLimit: 7 } } } } });
-        // Donut
         const o = d.donut;
         $('donut-pct').textContent = o.pct_on_time === null ? '–' : o.pct_on_time + '%';
         $('lg-ok').textContent = o.pct_on_time === null ? '–' : o.pct_on_time + '% (' + o.on_time + ')';
         $('lg-late').textContent = o.pct_late === null ? '–' : o.pct_late + '% (' + o.late + ')';
         mk('chart-donut', { type: 'doughnut', data: { labels: ['Tepat Waktu', 'Terlambat'], datasets: [{ data: o.total ? [o.on_time, o.late] : [1, 0], backgroundColor: [PINK, GREEN], borderWidth: 4, borderColor: '#fff' }] },
             options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } } });
-        // Grafik per status (batang harian)
         mk('chart-status', { type: 'bar', data: { labels: d.trend.labels, datasets: [
             { label: 'Tepat Waktu', data: d.trend.on_time, backgroundColor: GREEN, borderRadius: 3 },
             { label: 'Terlambat', data: d.trend.delayed, backgroundColor: PINK, borderRadius: 3 } ] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
                 scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: grid }, x: { grid: { display: false }, ticks: { maxTicksLimit: 6 } } } } });
-        // Info Penting
         const TXT = { late24: ['#FF5FA2', (n) => n + ' pengiriman terlambat > 24 jam'], exception: ['#3B82F6', (n) => n + ' exception masih terbuka'] };
         $('info-list').innerHTML = d.info.map((i) => '<li><a href="' + URLS[i.key] + '" class="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 hover:bg-white"><span class="h-2.5 w-2.5 flex-none rounded-full" style="background:' + TXT[i.key][0] + '"></span><span class="flex-1 font-semibold text-ink-800">' + esc(TXT[i.key][1](i.count)) + '</span><span class="text-ink-400">›</span></a></li>').join('');
-        // Pengiriman Terbaru
         $('recent-body').innerHTML = d.recent.length ? d.recent.map((r) => '<tr><td class="td whitespace-nowrap text-xs"><a class="font-semibold hover:underline" href="' + esc(r.url) + '">' + esc(r.number) + '</a></td><td class="td text-xs">' + esc(r.route) + '</td><td class="td"><span class="pill pill-' + esc(r.tone) + '">' + esc(r.label) + '</span></td><td class="td whitespace-nowrap text-xs">' + esc(r.eta) + '</td></tr>').join('')
             : '<tr><td class="td" colspan="4">Belum ada pengiriman.</td></tr>';
-        // Top Rute
         $('top-routes').innerHTML = d.top_routes.length ? d.top_routes.map((r, i) => '<li class="flex items-center gap-3"><span class="grid h-7 w-7 flex-none place-items-center rounded-full bg-pink-100 text-xs font-extrabold text-sakura-600">' + (i + 1) + '</span><div class="min-w-0 flex-1"><p class="truncate font-semibold">' + esc(r.route) + '</p><div class="mt-1 h-1.5 rounded-full bg-pink-100"><div class="h-1.5 rounded-full" style="width:' + Math.min(100, r.pct) + '%;background:linear-gradient(90deg,#FF6FAE,#F0407F)"></div></div></div><b class="text-base">' + r.pct + '%</b></li>').join('')
             : '<li class="text-ink-500">Belum ada data rute.</li>';
-        // Aktivitas Sistem
         const AI = { created: 'M12 5v14M5 12h14', tracking: 'M4 4v6h6M20 20v-6h-6M20 10A8 8 0 0 0 6 6L4 10m16 4-2 4a8 8 0 0 1-14-4', exception: 'M12 8v4m0 4h.01M12 3 2 20h20L12 3Z' };
         $('activity').innerHTML = d.activity.length ? d.activity.map((a) => '<li class="flex items-center gap-3"><span class="w-11 flex-none text-xs text-ink-500" title="' + esc(a.at) + '">' + esc(a.time) + '</span><span class="act-ico act-' + esc(a.kind) + '"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="' + AI[a.kind] + '"/></svg></span><span class="flex-1 text-xs font-medium">' + esc(a.text) + '</span></li>').join('')
             : '<li class="text-ink-500">Belum ada aktivitas.</li>';
@@ -513,3 +562,4 @@
 })();
 </script>
 @endpush
+```[cite: 7]

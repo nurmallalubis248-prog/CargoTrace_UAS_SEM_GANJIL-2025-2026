@@ -147,12 +147,15 @@ class Shipment extends Model
             ->when(! empty($f['date_to']), fn (Builder $q) => $q->whereDate('shipments.expected_arrival_at', '<=', $f['date_to']));
     }
 
-    /** Whitelisted sorting (never interpolate user input into ORDER BY). */
+    /**
+     * Whitelisted sorting (never interpolate user input into ORDER BY).
+     * Default: data lama di atas, data baru di paling bawah (asc). Pengguna tetap bisa memilih desc.
+     */
     public function scopeSortBy(Builder $query, ?string $column, ?string $direction): Builder
     {
         $column = in_array($column, self::SORTABLE, true) ? $column : 'created_at';
-        $direction = strtolower((string) $direction) === 'asc' ? 'asc' : 'desc';
+        $direction = strtolower((string) $direction) === 'desc' ? 'desc' : 'asc';
 
-        return $query->orderBy('shipments.'.$column, $direction)->orderBy('shipments.id', 'desc');
+        return $query->orderBy('shipments.'.$column, $direction)->orderBy('shipments.id', $direction);
     }
 }

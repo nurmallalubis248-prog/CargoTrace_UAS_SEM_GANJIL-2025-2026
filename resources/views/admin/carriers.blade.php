@@ -4,6 +4,14 @@
 @push('head')
 @include('partials.sh-styles')
 @include('partials.ct-admin-styles')
+<style>
+    /* Kolom Aksi: tombol Detail + menu titik tiga (Edit / Delete), satu baris */
+    .ct-acts.ct-acts-k { flex-wrap: nowrap; align-items: center; gap: .35rem; }
+    .ct-acts-k .sh-menu button { color: #2B3027; }
+    .ct-acts-k .sh-menu button:hover { background: #FFF0F6; color: #E91E8C; }
+    .ct-acts-k .sh-menu button.ct-mi-del { color: #C81E4F; }
+    .ct-acts-k .sh-menu button.ct-mi-del:hover { background: #FFE4EA; color: #C81E4F; }
+</style>
 @endpush
 
 @section('content')
@@ -66,10 +74,12 @@
         </svg>
     </div>
 
+    @writable
     <button type="button" class="ct-add" data-open-add>
         <svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         <span>Add Carrier</span>
     </button>
+    @endwritable
 </section>
 
 {{-- Kartu filter --}}
@@ -129,7 +139,7 @@
                         @endif
                     </td>
                     <td>
-                        <div class="ct-acts"
+                        <div class="ct-acts ct-acts-k"
                              data-id="{{ $c->id }}" data-name="{{ $c->name }}" data-code="{{ $c->code }}"
                              data-mode="{{ $c->transport_mode ?: 'SEA' }}" data-email="{{ $c->contact_email }}"
                              data-active="{{ $c->is_active ? 1 : 0 }}" data-shipments="{{ $c->shipments_count }}">
@@ -137,14 +147,15 @@
                                 <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                                 <span>Detail</span>
                             </button>
-                            <button type="button" class="ct-act ct-act-edit" data-act="edit">
-                                <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                                <span data-no-i18n>Edit</span>
-                            </button>
-                            <button type="button" class="ct-act ct-act-del" data-act="delete">
-                                <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>
-                                <span>Delete</span>
-                            </button>
+                            @writable
+                            <details class="sh-kebab">
+                                <summary aria-label="Action"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></summary>
+                                <div class="sh-menu" hidden>
+                                    <button type="button" class="ct-mi-edit" data-act="edit" data-no-i18n>Edit</button>
+                                    <button type="button" class="ct-mi-del" data-act="delete">Delete</button>
+                                </div>
+                            </details>
+                            @endwritable
                         </div>
                     </td>
                 </tr>
@@ -236,6 +247,7 @@
 @endsection
 
 @push('scripts')
+@include('partials.sh-scripts')
 <script>
 (function () {
     var $ = function (id) { return document.getElementById(id); };
@@ -260,10 +272,12 @@
     }
     function rowData(el) { var d = el.closest('.ct-acts').dataset; return { id: d.id, name: d.name, code: d.code, mode: d.mode, email: d.email, active: d.active, shipments: d.shipments }; }
 
-    document.querySelector('[data-open-add]').addEventListener('click', function () { openForm('add', {}); });
+    var addBtn = document.querySelector('[data-open-add]');   /* tidak ada di Mode Viewer */
+    if (addBtn) { addBtn.addEventListener('click', function () { openForm('add', {}); }); }
 
-    document.querySelectorAll('.ct-act').forEach(function (b) {
+    document.querySelectorAll('[data-act]').forEach(function (b) {
         b.addEventListener('click', function () {
+            var kb = b.closest('details.sh-kebab'); if (kb) { kb.removeAttribute('open'); }
             var d = rowData(b), act = b.getAttribute('data-act');
             if (act === 'edit') { openForm('edit', d); }
             else if (act === 'detail') {

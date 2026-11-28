@@ -64,6 +64,8 @@
     ];
     // tipe notifikasi => [chip, warna, ikon, deskripsi (kunci kamus, {no} = nomor pengiriman)]
     $types = [
+        'SHIPMENT_REQUEST'   => ['Shipment', 'orange', 'doc', 'Shipment %s is waiting for review. Open the details to process it.'],
+        'SHIPMENT_PROCESSED' => ['Shipment', 'green', 'check', 'Shipment %s has been processed. Open the details to view it.'],
         'SHIPMENT_CREATED'   => ['Shipment', 'rose', 'box', 'Shipment %s has been created and is ready for processing.'],
         'STATUS_CHANGED'     => ['Shipment', 'green', 'plane', 'The status of shipment %s has been updated.'],
         'DELIVERY_CONFIRMED' => ['Shipment', 'green', 'check', 'Shipment %s was received by the customer.'],
@@ -95,7 +97,7 @@
                 </a>
             @endforeach
         </div>
-        @if($counts['unread'] > 0)
+        @if($counts['unread'] > 0 && session('is_viewer') !== true)
             <form method="POST" action="{{ route('notifications.read-all') }}">@csrf
                 <button class="nt-readall" type="submit">
                     <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $svg['check'] }}"/></svg>

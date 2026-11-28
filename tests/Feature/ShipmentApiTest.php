@@ -32,12 +32,18 @@ class ShipmentApiTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'shipment.created', 'entity_id' => $id, 'user_id' => $operator->id]);
     }
 
-    public function test_customer_cannot_create_shipment(): void
+    public function test_customer_can_request_shipment_only_for_themselves(): void
     {
         $customer = $this->makeUser(User::ROLE_CUSTOMER);
+        $other = $this->makeUser(User::ROLE_CUSTOMER);
         Sanctum::actingAs($customer);
 
-        $this->postJson('/api/shipments', $this->shipmentPayload($customer))->assertForbidden();
+        // customer_id from the payload is ignored: a customer can only request for themselves, and it starts as PENDING.
+        $this->postJson('/api/shipments', $this->shipmentPayload($other))
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'PENDING');
+        $this->assertDatabaseHas('shipments', ['customer_id' => $customer->id, 'current_status' => 'PENDING']);
+        $this->assertDatabaseMissing('shipments', ['customer_id' => $other->id]);
     }
 
     public function test_validation_rejects_bad_data(): void

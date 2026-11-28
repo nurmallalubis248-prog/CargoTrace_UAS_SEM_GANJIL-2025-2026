@@ -75,7 +75,7 @@ php artisan migrate:fresh --seed
 
 **XAMPP users:** start Apache + MySQL, create the database `cargotrace` in phpMyAdmin, keep `DB_HOST=127.0.0.1`, `DB_USERNAME=root` and an empty password.
 
-**phpMyAdmin alternative (without Artisan):** import `database/cargotrace_schema.sql` (creates all tables and demo data in one go). Use **either** this route **or** `php artisan migrate`, never both, otherwise you get "table already exists" errors. The richer demo data (road/air carriers, delayed shipments with reasons) is only created by the seeder (`php artisan migrate:fresh --seed`).
+**phpMyAdmin alternative (without Artisan):** import `database/cargotrace_schema.sql` (creates all tables and the four demo accounts; all other tables stay empty). Use **either** this route **or** `php artisan migrate`, never both, otherwise you get "table already exists" errors.
 
 ### Demo accounts (password: `password`)
 | Role | Name | Email |
@@ -88,7 +88,7 @@ php artisan migrate:fresh --seed
 > Change or delete these accounts on any public deployment. The login page only lists them when `SHOW_DEMO_ACCOUNTS=true`.
 
 ### Demo data
-`database/seeders/DatabaseSeeder.php` creates ports, carriers, the four users above and sample shipments (on time, delayed LOW/MEDIUM/HIGH, delivered, booked, created, with exceptions). Seeding goes through the real service classes so all business rules apply. **Port names/coordinates and carrier names are real references; all shipments, vessel positions, delays and exceptions are synthetic demonstration data.**
+`database/seeders/DatabaseSeeder.php` creates only the four demo accounts above. No carriers, locations or shipments are pre-loaded: the administrator adds the master data (carriers, locations) in the Admin menu, and operators then create shipments in the app or through the API. This keeps the database free of generated sample data.
 
 ## Configuration (`.env`)
 | Variable | Purpose |

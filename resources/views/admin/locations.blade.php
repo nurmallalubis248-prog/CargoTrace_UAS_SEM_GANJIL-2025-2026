@@ -101,10 +101,12 @@
         </svg>
     </div>
 
+    @writable
     <button type="button" class="ct-add" data-open-add>
         <svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         <span>Add Location</span>
     </button>
+    @endwritable
 </section>
 
 {{-- Kartu filter --}}
@@ -220,6 +222,7 @@
                                 <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                                 <span>Detail</span>
                             </button>
+                            @writable
                             <details class="sh-kebab">
                                 <summary aria-label="Action"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></summary>
                                 <div class="sh-menu" hidden>
@@ -230,6 +233,7 @@
                                     <button type="button" class="lc-mi lc-mi-del" data-act="delete"><span>Delete</span></button>
                                 </div>
                             </details>
+                            @endwritable
                         </div>
                     </td>
                 </tr>
@@ -365,7 +369,8 @@
     }
     function rowData(el) { var d = el.closest('.lc-act').dataset; return { id: d.id, name: d.name, code: d.code, country: d.country, type: d.type, lat: d.lat, lng: d.lng, active: d.active, used: d.used }; }
 
-    document.querySelector('[data-open-add]').addEventListener('click', function () { openForm('add', {}); });
+    var addBtn = document.querySelector('[data-open-add]');   /* tidak ada di Mode Viewer */
+    if (addBtn) { addBtn.addEventListener('click', function () { openForm('add', {}); }); }
 
     document.querySelectorAll('.lc-act [data-act]').forEach(function (b) {
         b.addEventListener('click', function () {

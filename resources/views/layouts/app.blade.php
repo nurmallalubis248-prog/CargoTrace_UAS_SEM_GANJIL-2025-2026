@@ -11,6 +11,7 @@
     <script>window.CT = window.CT || {};</script>
     <script src="{{ asset('js/ct-dict.js') }}?v={{ filemtime(public_path('js/ct-dict.js')) }}"></script>
     <script src="{{ asset('js/ct-i18n.js') }}?v={{ filemtime(public_path('js/ct-i18n.js')) }}"></script>
+    <script src="{{ asset('js/ct-select.js') }}?v={{ filemtime(public_path('js/ct-select.js')) }}" defer></script>
 <style>
     /* Cards never overflow their grid cell (all pages) */
     .grid > * { min-width: 0; }
@@ -63,8 +64,19 @@
 </style>
 </head>
 <body class="min-h-screen bg-matcha-50 text-ink-800">
+@if(session('is_viewer') === true)
+<div role="status" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.75rem;padding:.45rem 1rem;background:#FFF4CC;border-bottom:1px solid #F2D675;color:#6B4E00;font-size:.8rem;font-weight:700">
+    <span data-no-i18n>👁 Mode Viewer (Hanya Lihat)</span>
+    <form method="POST" action="{{ route('viewer.exit') }}" style="margin:0">@csrf
+        <button type="submit" data-no-i18n style="border:1px solid #D9B84A;background:#fff;color:#6B4E00;border-radius:9999px;padding:.2rem .85rem;font-size:.78rem;font-weight:800;cursor:pointer">Keluar Mode Viewer</button>
+    </form>
+</div>
+@endif
 @php
+    $isViewer = session('is_viewer') === true;   // Mode Viewer (Read-Only Demo): tanpa akun database
     $user = auth()->user(); $unread = $user ? $user->appNotifications()->whereNull('read_at')->count() : 0;
+    $userName = $isViewer ? 'Pengunjung (Viewer)' : ($user?->name ?? 'Pengguna');
+    $userRole = $isViewer ? 'viewer' : ($user?->role ?? '');
     // Ikon outline (sesuai desain sidebar): rumah, kotak, dokumen, lonceng, truk, pin, kalkulator, pengguna, riwayat
     $ic = [
         'dashboard' => 'M2.25 12 11.2 3.05a1.13 1.13 0 0 1 1.6 0L21.75 12M4.5 9.75V19.5a.75.75 0 0 0 .75.75H9.75v-4.5h4.5v4.5h4.5a.75.75 0 0 0 .75-.75V9.75',
@@ -79,7 +91,7 @@
     // Label bawaan (Indonesia) bila kamus i18n belum punya kuncinya
     $labels = ['dashboard'=>'Dashboard','shipments'=>'Pengiriman','reports'=>'Laporan','notifications'=>'Notifikasi','carriers'=>'Pengangkut','locations'=>'Lokasi','users'=>'Pengguna','audit'=>'Log Audit'];
     $links = [['dashboard','dashboard','dashboard','dashboard'], ['shipments','shipments.index','shipments.*','shipments'], ['reports','reports.index','reports.*','reports'], ['notifications','notifications.index','notifications.*','notifications']];
-    $adminLinks = $user->isAdmin() ? [['carriers','admin.carriers.index','admin.carriers.*','carriers'], ['locations','admin.locations.index','admin.locations.*','locations'], ['users','admin.users.index','admin.users.*','users'], ['audit','admin.audit.index','admin.audit.*','audit']] : [];
+    $adminLinks = ($user?->isAdmin() ?? false) ? [['carriers','admin.carriers.index','admin.carriers.*','carriers'], ['locations','admin.locations.index','admin.locations.*','locations'], ['users','admin.users.index','admin.users.*','users'], ['audit','admin.audit.index','admin.audit.*','audit']] : [];
 @endphp
 <div class="flex min-h-screen">
     {{-- LEFT SIDEBAR: gradasi pink -> hijau (desain CargoTrace). Semua menu fitur ada di sini --}}
@@ -178,8 +190,10 @@
                     </div>
                     <select id="country-sel" aria-label="Country" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none" style="max-width:11rem"></select>
                     <select data-lang-select aria-label="Language" class="rounded-lg border border-ink-300 bg-white px-2 py-1.5 text-xs font-semibold text-ink-700 focus:border-matcha-500 focus:outline-none"></select>
-                    @if($user->isStaff())
+                    @if(! $isViewer && ($user?->isStaff() ?? false))
                         <a href="{{ route('shipments.create') }}" class="btn-accent !py-1.5"><span data-i18n="newShipment">New shipment</span></a>
+                    @elseif(! $isViewer && ($user?->isCustomer() ?? false))
+                        <a href="{{ route('shipments.create') }}" class="btn-accent !py-1.5"><span>Request shipment</span></a>
                     @endif
                     <a href="{{ route('notifications.index') }}" class="relative grid h-10 w-10 place-items-center rounded-full bg-white/90 text-ink-800 shadow-sm hover:bg-white" aria-label="Notifikasi">
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="{{ $ic['notifications'] }}"/></svg>
@@ -187,16 +201,26 @@
                     </a>
                     <details class="relative hidden md:block">
                         <summary class="flex cursor-pointer list-none items-center gap-2 rounded-full bg-white/90 py-1 pl-1 pr-3 shadow-sm [&::-webkit-details-marker]:hidden">
-                            <span class="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[#FF7DB5] to-[#8CCB4F] text-sm font-extrabold text-white">{{ strtoupper(mb_substr($user->name, 0, 1)) }}</span>
-                            <span class="leading-tight"><span class="block max-w-[8rem] truncate text-xs font-bold">{{ $user->name }}</span><span class="block text-[10px] text-ink-500">{{ ['admin' => 'Super Admin', 'operator' => 'Operator', 'customer' => 'Pelanggan'][strtolower($user->role)] ?? ucfirst($user->role) }}</span></span>
+                            <span class="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[#FF7DB5] to-[#8CCB4F] text-sm font-extrabold text-white">{{ strtoupper(mb_substr($userName, 0, 1)) }}</span>
+                            <span class="leading-tight"><span class="block max-w-[8rem] truncate text-xs font-bold" data-no-i18n>{{ $userName }}</span><span class="block text-[10px] text-ink-500">{{ ['admin' => 'Super Admin', 'operator' => 'Operator', 'customer' => 'Pelanggan', 'viewer' => 'Mode Lihat'][strtolower($userRole)] ?? ucfirst($userRole) }}</span></span>
                             <svg class="h-4 w-4 text-ink-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
                         </summary>
+                        @if($isViewer)
+                        <form method="POST" action="{{ route('viewer.exit') }}" class="absolute right-0 mt-2 w-48 rounded-2xl bg-white p-2 shadow-xl">@csrf
+                            <button class="w-full rounded-xl px-3 py-2 text-left text-sm font-bold text-[#E91E8C] hover:bg-pink-50" data-no-i18n>Keluar Mode Viewer</button>
+                        </form>
+                        @else
                         <form method="POST" action="{{ route('logout') }}" class="absolute right-0 mt-2 w-40 rounded-2xl bg-white p-2 shadow-xl">@csrf
                             <button class="w-full rounded-xl px-3 py-2 text-left text-sm font-bold text-[#E91E8C] hover:bg-pink-50" data-i18n="logout">Log out</button>
                         </form>
+                        @endif
                     </details>
                     <button id="install-btn" type="button" class="btn-light hidden whitespace-nowrap !px-3 !py-1.5 text-xs">Install app</button>
+                    @if($isViewer)
+                    <form method="POST" action="{{ route('viewer.exit') }}" class="lg:hidden">@csrf<button class="btn-light !px-3 !py-1.5 text-xs" data-no-i18n>Keluar Mode Viewer</button></form>
+                    @else
                     <form method="POST" action="{{ route('logout') }}" class="lg:hidden">@csrf<button class="btn-light !px-3 !py-1.5 text-xs" data-i18n="logout">Log out</button></form>
+                    @endif
                 </div>
             </div>
             

@@ -13,7 +13,7 @@
     $to = $total ? $shipments->lastItem() : 0;
     $perPage = (int) ($filters['per_page'] ?? 10);
     $sortOpts = ['created_at' => 'Created', 'expected_arrival_at' => 'Expected arrival', 'estimated_arrival_at' => 'ETA', 'delay_hours' => 'Delay', 'current_status' => 'Status', 'shipment_number' => 'Number'];
-    $dir = $filters['dir'] ?? 'desc';
+    $dir = $filters['dir'] ?? 'asc';
 
     $ico = [
         'box' => 'm21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9',
@@ -29,10 +29,10 @@
             <p>Manage shipment data and monitor status in real time</p>
         </div>
     </div>
-    @if($user->isStaff())
+    @if(($user->isStaff() || $user->isCustomer()) && session('is_viewer') !== true)
         <a href="{{ route('shipments.create') }}" class="sh-new">
             <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>
-            <span data-i18n="newShipment">New shipment</span>
+            @if($user->isCustomer())<span>Request shipment</span>@else<span data-i18n="newShipment">New shipment</span>@endif
         </a>
     @endif
 </div>

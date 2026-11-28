@@ -16,7 +16,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Pengiriman otomatis ikut mengejar jadwal tiap ada yang membuka aplikasi (lihat SimulationService::catchUp).
-        $middleware->web(append: [\App\Http\Middleware\CatchUpSimulation::class]);
+        $middleware->web(append: [
+            \App\Http\Middleware\CatchUpSimulation::class,
+            \App\Http\Middleware\ReadOnlyViewer::class,
+        ]);
+        // Mode Viewer harus berjalan SEBELUM middleware `auth` (urutan prioritas bawaan Laravel akan memajukan `auth`).
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            prepend: \App\Http\Middleware\ReadOnlyViewer::class,
+        );
         $middleware->alias([
             'role' => EnsureRole::class,
         ]);

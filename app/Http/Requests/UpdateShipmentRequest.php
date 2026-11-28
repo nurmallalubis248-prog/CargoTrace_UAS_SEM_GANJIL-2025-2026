@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ShipmentStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -27,6 +28,9 @@ class UpdateShipmentRequest extends FormRequest
     public function rules(): array
     {
         $sometimes = $this->isMethod('PATCH') ? 'sometimes' : 'required';
+        // A PENDING customer request has no schedule yet: optional while editing, required once it is approved.
+        $pending = $this->route('shipment')?->current_status === ShipmentStatus::PENDING;
+        $schedule = ($pending && ! $this->boolean('approve')) ? 'nullable' : $sometimes;
 
         return [
             'reference_number' => ['nullable', 'string', 'max:50'],
@@ -37,8 +41,8 @@ class UpdateShipmentRequest extends FormRequest
             'cargo_type' => [$sometimes, Rule::in(array_keys(config('cargotrace.cargo_types')))],
             'weight_kg' => [$sometimes, 'numeric', 'gt:0', 'max:99999999'],
             'volume_cbm' => ['nullable', 'numeric', 'gt:0', 'max:99999999'],
-            'expected_departure_at' => [$sometimes, 'date'],
-            'expected_arrival_at' => [$sometimes, 'date', 'after:expected_departure_at'],
+            'expected_departure_at' => [$schedule, 'date'],
+            'expected_arrival_at' => [$schedule, 'date', 'after:expected_departure_at'],
             // Form web: minimal 1 barang wajib diisi. API (dan PATCH parsial) tetap opsional seperti sebelumnya.
             'items' => ($this->is('api/*') || $this->isMethod('PATCH')) ? ['nullable', 'array', 'max:50'] : ['required', 'array', 'min:1', 'max:50'],
             'items.*.description' => ['required', 'string', 'max:255'],

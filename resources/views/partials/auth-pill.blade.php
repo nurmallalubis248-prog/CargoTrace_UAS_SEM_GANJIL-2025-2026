@@ -144,13 +144,12 @@
             <label class="flex items-center gap-2 text-sm text-ink-600"><input type="checkbox" name="remember" value="1" class="rounded border-ink-300 text-matcha-600"> <span data-i18n="remember">Remember me</span></label>
             <button class="grad-brand w-full rounded-xl py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-90" type="submit" data-i18n="signin">Sign in</button>
         </form>
+        {{-- Mode Viewer (Read-Only Demo): tanpa akun, murni session. Lihat ReadOnlyViewer middleware. --}}
+        <form method="POST" action="{{ route('viewer.enter') }}" class="mt-3">
+            @csrf
+            <button type="submit" data-no-i18n class="w-full rounded-xl border-2 border-matcha-300 bg-white py-3 text-sm font-bold text-matcha-800 transition hover:bg-matcha-50">👁 Masuk Mode Lihat (Viewer Demo)</button>
+        </form>
         <p class="mt-4 text-center"><button type="button" class="ct-help-link" data-open-reg="contact">{!! $svg('headset', 16) !!}<span>Need help? Contact admin</span></button></p>
-        @if(config('cargotrace.show_demo_accounts'))
-            <div class="mt-5 rounded-xl border border-matcha-100 bg-matcha-50 p-4 text-xs text-ink-600">
-                <p class="mb-1 font-bold text-matcha-800"><span data-i18n="demo">Demo accounts</span> (password: <code>password</code>)</p>
-                <p>admin@cargotrace.test · operator@cargotrace.test · customer1@cargotrace.test</p>
-            </div>
-        @endif
     </div>
 </div>
 
@@ -282,6 +281,47 @@
     });
     document.addEventListener('ct:lang', function (e) {
         document.querySelectorAll('[data-set-lang]').forEach(function (el) { el.classList.toggle('is-on', el.getAttribute('data-set-lang') === e.detail); });
+    });
+})();
+</script>
+
+{{-- Ikon mata (tampilkan / sembunyikan kata sandi) untuk semua kolom password di popup Masuk & Daftar. --}}
+<script>
+(function () {
+    var OPEN = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+    var CLOSED = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.4 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.1 9.1 0 0 1 12 5c6.4 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
+
+    document.querySelectorAll('.ct-modal input[type="password"]').forEach(function (input) {
+        if (input.dataset.ctEye) { return; }
+        input.dataset.ctEye = '1';
+
+        var wrap = document.createElement('div');
+        wrap.style.position = 'relative';
+        input.parentNode.insertBefore(wrap, input);
+        wrap.appendChild(input);
+        input.style.paddingRight = '2.9rem';
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ct-eye';
+        btn.setAttribute('data-no-i18n', '');
+        btn.style.cssText = 'position:absolute;top:0;bottom:0;right:.35rem;width:2.5rem;display:grid;place-items:center;border:0;background:transparent;color:#6b7280;cursor:pointer;border-radius:.75rem';
+        btn.onmouseenter = function () { btn.style.color = '#4d6f1f'; };
+        btn.onmouseleave = function () { btn.style.color = '#6b7280'; };
+        wrap.appendChild(btn);
+
+        function paint() {
+            var shown = input.type === 'text';
+            btn.innerHTML = shown ? OPEN : CLOSED;                         /* terbuka = mata terbuka, tersembunyi = mata tertutup */
+            btn.setAttribute('aria-label', shown ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+            btn.setAttribute('aria-pressed', shown ? 'true' : 'false');
+        }
+        btn.addEventListener('click', function () {
+            input.type = input.type === 'password' ? 'text' : 'password';
+            paint();
+            input.focus();
+        });
+        paint();
     });
 })();
 </script>

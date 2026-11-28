@@ -4,24 +4,31 @@
         ? $shipment->items->map(fn ($i) => ['description' => $i->description, 'quantity' => $i->quantity, 'weight_kg' => $i->weight_kg])->all()
         : []);
     $rows = array_pad(array_values($rows), 3, []);
+    // Schedule: a customer never fills it (admin/operator sets it on approval). While a request is PENDING it is optional
+    // for admin/operator until they approve it.
+    $showSchedule = ! ($isCustomerForm ?? false);
+    $scheduleRequired = ! ($shipment->exists && $shipment->current_status->value === 'PENDING');
 @endphp
 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    {{-- Customer: the dropdown is hidden; customer_id is always taken from the logged-in customer on the server. --}}
+    @unless($isCustomerForm ?? false)
     <div>
         <label class="label">Customer *</label>
-        <select class="input" name="customer_id" required>
+        <select class="input" name="customer_id" data-searchable required>
             <option value="">Select customer</option>
             @foreach($customers as $c)
                 <option value="{{ $c->id }}" @selected((string) old('customer_id', $shipment->customer_id) === (string) $c->id)>{{ $c->name }} ({{ $c->email }})</option>
             @endforeach
         </select>
     </div>
+    @endunless
     <div>
         <label class="label">Reference number (PO / booking)</label>
         <input class="input" type="text" name="reference_number" maxlength="50" value="{{ old('reference_number', $shipment->reference_number) }}">
     </div>
     <div>
         <label class="label">Carrier *</label>
-        <select class="input" name="carrier_id" required>
+        <select class="input" name="carrier_id" data-searchable required>
             <option value="">Select carrier</option>
             @foreach($carriers as $c)
                 <option value="{{ $c->id }}" @selected((string) old('carrier_id', $shipment->carrier_id) === (string) $c->id)>{{ $c->name }}</option>
@@ -38,7 +45,7 @@
     </div>
     <div>
         <label class="label">Origin *</label>
-        <select class="input" name="origin_id" required>
+        <select class="input" name="origin_id" data-searchable required>
             <option value="">Select origin</option>
             @foreach($locations as $l)
                 <option value="{{ $l->id }}" @selected((string) old('origin_id', $shipment->origin_id) === (string) $l->id)>{{ $l->name }} ({{ $l->code }})</option>
@@ -47,7 +54,7 @@
     </div>
     <div>
         <label class="label">Destination *</label>
-        <select class="input" name="destination_id" required>
+        <select class="input" name="destination_id" data-searchable required>
             <option value="">Select destination</option>
             @foreach($locations as $l)
                 <option value="{{ $l->id }}" @selected((string) old('destination_id', $shipment->destination_id) === (string) $l->id)>{{ $l->name }} ({{ $l->code }})</option>
@@ -62,15 +69,17 @@
         <label class="label">Volume (m&sup3;)</label>
         <input class="input" type="number" step="0.01" min="0.01" name="volume_cbm" value="{{ old('volume_cbm', $shipment->volume_cbm) }}">
     </div>
+    @if($showSchedule)
     <div>
-        <label class="label">Expected departure <span class="text-red-600">*</span></label>
-        <input class="input" type="datetime-local" data-utc-local name="expected_departure_at" required value="{{ old('expected_departure_at', $dt($shipment->expected_departure_at)) }}">
+        <label class="label">Expected departure <span class="text-red-600">{{ $scheduleRequired ? '*' : '' }}</span></label>
+        <input class="input" type="datetime-local" data-utc-local name="expected_departure_at" @required($scheduleRequired) value="{{ old('expected_departure_at', $dt($shipment->expected_departure_at)) }}">
     </div>
     <div>
-        <label class="label">Expected arrival <span class="text-red-600">*</span></label>
-        <input class="input" type="datetime-local" data-utc-local name="expected_arrival_at" required value="{{ old('expected_arrival_at', $dt($shipment->expected_arrival_at)) }}">
+        <label class="label">Expected arrival <span class="text-red-600">{{ $scheduleRequired ? '*' : '' }}</span></label>
+        <input class="input" type="datetime-local" data-utc-local name="expected_arrival_at" @required($scheduleRequired) value="{{ old('expected_arrival_at', $dt($shipment->expected_arrival_at)) }}">
     </div>
     <p class="text-xs text-ink-500 md:col-span-2" style="margin-top:-.5rem"><span>Times follow the time zone selected in the top bar</span>: <b data-no-i18n data-tz-name>UTC</b>. <span>They are saved in UTC.</span></p>
+    @endif
 </div>
 
 <h3 class="mt-6 font-semibold">Cargo items *</h3>

@@ -94,10 +94,12 @@
         </svg>
     </div>
 
+    @writable
     <button type="button" class="ct-add" data-open-add>
         <svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         <span>Add User</span>
     </button>
+    @endwritable
 </section>
 
 {{-- Kartu filter --}}
@@ -196,7 +198,7 @@
                                 <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                                 <span>Detail</span>
                             </button>
-                            @unless($me)
+                            @unless($me || session('is_viewer') === true)
                             <details class="sh-kebab">
                                 <summary aria-label="Action"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></summary>
                                 <div class="sh-menu" hidden>
@@ -300,7 +302,8 @@
     var T = function (s) { return (window.CT && CT.tx) ? CT.tx(s) : s; };
     var roleUrl = @json(route('admin.users.role', ['user' => '__ID__']));
 
-    document.querySelector('[data-open-add]').addEventListener('click', function () { $('dlg-form').showModal(); $('cf-name').focus(); });
+    var addBtn = document.querySelector('[data-open-add]');   /* tidak ada di Mode Viewer */
+    if (addBtn) { addBtn.addEventListener('click', function () { $('dlg-form').showModal(); $('cf-name').focus(); }); }
 
     document.querySelectorAll('.us-act [data-act]').forEach(function (b) {
         b.addEventListener('click', function () {

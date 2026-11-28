@@ -15,12 +15,17 @@ use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\ReportController;
 use App\Http\Controllers\Web\ShipmentController;
 use App\Http\Controllers\Web\TrackingController;
+use App\Http\Controllers\Web\ViewerModeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'login'));
 
 // Pilih bahasa (boleh tanpa login, dipakai juga di halaman login).
 Route::get('lang/{locale}', [LanguageController::class, 'switch'])->name('lang.switch');
+
+// Mode Viewer (Read-Only Demo): tanpa akun database, murni session. Lihat ReadOnlyViewer middleware.
+Route::post('viewer-mode', [ViewerModeController::class, 'enter'])->middleware('throttle:20,1')->name('viewer.enter');
+Route::post('exit-viewer', [ViewerModeController::class, 'exit'])->name('viewer.exit');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
@@ -55,6 +60,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('exceptions/{exception}', [ExceptionController::class, 'update'])->name('exceptions.update');
     Route::get('shipments/{shipment}/weather', [ExternalApiController::class, 'weather'])->name('shipments.weather');
     Route::get('shipments/{shipment}/live', [ShipmentController::class, 'live'])->name('shipments.live');
+    Route::post('shipments/{shipment}/approve', [ShipmentController::class, 'approve'])->name('shipments.approve');
 
     Route::post('shipments/{shipment}/confirm', [ShipmentController::class, 'confirm'])->name('shipments.confirm');
 

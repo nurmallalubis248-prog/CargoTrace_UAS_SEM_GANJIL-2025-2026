@@ -85,10 +85,12 @@
             <p>Choose filters, check the report data, then download it as a PDF.</p>
         </div>
     </div>
+    @writable
     <a id="pdf-btn" href="{{ $pdfUrl }}" class="sh-new">
         <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
         <span>Download PDF</span>
     </a>
+    @endwritable
 </div>
 
 {{-- Kartu filter --}}
@@ -216,9 +218,10 @@
 @include('partials.sh-scripts')
 <script>
     // Bahasa dipilih di browser, jadi beri tahu server bahasa untuk PDF.
-    document.getElementById('pdf-btn').addEventListener('click', function () {
+    var pdfBtn = document.getElementById('pdf-btn');   // tidak ada di Mode Viewer
+    if (pdfBtn) { pdfBtn.addEventListener('click', function () {
         let l = null; try { l = localStorage.getItem('ct_lang'); } catch (e) {}
         if (l === 'id' || l === 'en') { const u = new URL(this.href); u.searchParams.set('lang', l); this.href = u.toString(); }
-    });
+    }); }
 </script>
 @endpush

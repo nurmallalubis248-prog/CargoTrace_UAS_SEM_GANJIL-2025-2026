@@ -29,7 +29,10 @@ class CarrierController extends Controller
             ->when($filters['name'] !== '', fn ($q) => $q->where('name', 'like', $like($filters['name'])))
             ->when($filters['code'] !== '', fn ($q) => $q->where('code', 'like', $like($filters['code'])))
             ->when($filters['status'] !== '', fn ($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->orderBy('name')
+            // Urut berdasarkan urutan input: data lama di atas, data baru di paling bawah.
+            // Ganti ke ->orderByDesc('id') kalau mau data terbaru di paling atas,
+            // atau ->orderBy('name') untuk urut abjad.
+            ->orderBy('id')
             ->paginate(self::PER_PAGE)
             ->withQueryString();
 

@@ -80,7 +80,7 @@ class DashboardTest extends TestCase
         $this->actingAs($customer)->get('/dashboard')->assertOk();
         $this->actingAs($customer)->get('/shipments')->assertOk()->assertSee($shipment->shipment_number);
         $this->actingAs($customer)->get("/shipments/{$shipment->id}")->assertOk()->assertSee('Tracking timeline');
-        $this->actingAs($customer)->get('/shipments/create')->assertForbidden();
+        $this->actingAs($customer)->get('/shipments/create')->assertOk();
         $this->actingAs($customer)->get('/admin/users')->assertForbidden();
         $this->actingAs($customer)->get('/admin/audit-logs')->assertForbidden();
 
